@@ -266,7 +266,7 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public_courier_checkout, 'add_venipak_shipping_courier_update_order_meta' );
 
 		$this->loader->add_action( 'woocommerce_review_order_after_shipping', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_options', 20, 2 );
-		$this->loader->add_action( 'woocommerce_checkout_process', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_checkout_process' );
+		$this->loader->add_action( 'woocommerce_checkout_process', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_checkout_process', 20 );
 		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_update_order_meta' );
 		$this->loader->add_action( 'wp_ajax_woocommerce_venipak_shipping_pickup_points', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_points' );
 		$this->loader->add_action( 'wp_ajax_nopriv_woocommerce_venipak_shipping_pickup_points', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_points' );

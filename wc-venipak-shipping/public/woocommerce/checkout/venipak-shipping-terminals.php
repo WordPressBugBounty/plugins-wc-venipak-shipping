@@ -13,5 +13,13 @@
         </div>
         <div style="clear: both; padding-top: 15px; text-align: right;" id="selected-pickup-info"></div>
         <div id="venipak-map" style="display: none; height: 300px;"></div>
+        <script>
+            if (window.venipakShipping) {
+                window.venipakShipping.init();
+                console.log('init venipak select');
+            } else {
+                console.log('init venipak select missing');
+            }
+        </script>
     </td>
 </tr>
