@@ -86,21 +86,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 
 	}
 
-	/**
-	 *
-	 *
-	 * @since    1.0.0
-	 */
-	public function add_venipak_shipping_bulk_admin_notice() {
-		if ( ! empty( $_REQUEST['venipak_labels_link'] ) ) {
-			// Sanitize the URL to remove any malicious code
-			$processed_result = esc_url( $_REQUEST['venipak_labels_link'] );
-	
-			// Use printf with a placeholder for the sanitized URL
-			printf( '<div class="notice notice-success fade is-dismissible"><p><a target="_blank" href="%s">Venipak PDF</a></p></div>', $processed_result );
-		}
-	}	
-
 	public function add_venipak_shipping_bulk_action_process( $redirect_to, $action, $post_ids ) {
 		if ( $action === 'shopup_venipak_shipping_labels' ) {
 			$pack_no_collection = [];
@@ -128,7 +113,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 					'Referer' => 'https://woocommerce.com/'
 				)
 			);
-			error_log(json_encode($args));
 			$response = wp_remote_post( $url, $args );
 			header("Content-type:application/pdf");
 			echo wp_remote_retrieve_body( $response );

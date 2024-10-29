@@ -85,20 +85,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
 	 *
 	 * @since    1.0.0
 	 */
-	public function add_venipak_shipping_bulk_admin_notice() {
-		global $pagenow;
-
-	    if ( 'edit.php' === $pagenow && isset($_GET['post_type']) && 'shop_order' === $_GET['post_type'] && isset($_GET['shopup_venipak_shipping_dispatch'])) {
-	      $processed_result = $_REQUEST['processed_result'];
-	      printf( '<div class="notice notice-success fade is-dismissible"><p>' . $processed_result . '</p></div>' );
-	    }
-	}
-
-	/**
-	 *
-	 *
-	 * @since    1.0.0
-	 */
 	public function add_venipak_shipping_orders_list_columns( $columns ) {
 		$reordered_columns = array();
 	    foreach( $columns as $key => $column) {

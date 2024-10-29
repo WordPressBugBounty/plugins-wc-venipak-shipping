@@ -206,10 +206,6 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'bulk_actions-edit-shop_order', $plugin_admin_orders_list, 'add_venipak_shipping_bulk_action' );
 		$this->loader->add_action( 'bulk_actions-woocommerce_page_wc-orders', $plugin_admin_orders_list, 'add_venipak_shipping_bulk_action' );
 
-
-
-		$this->loader->add_action( 'admin_notices', $plugin_admin_orders_list, 'add_venipak_shipping_bulk_admin_notice' );
-
 		$this->loader->add_action( 'manage_edit-shop_order_columns', $plugin_admin_orders_list, 'add_venipak_shipping_orders_list_columns', 20 );
 		$this->loader->add_action( 'manage_shop_order_posts_custom_column', $plugin_admin_orders_list, 'add_venipak_shipping_orders_list_columns_content', 20, 2 );
 		$this->loader->add_action( 'manage_woocommerce_page_wc-orders_columns', $plugin_admin_orders_list, 'add_venipak_shipping_orders_list_columns', 20 );
@@ -228,8 +224,6 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'wp_ajax_woocommerce_shopup_venipak_shipping_get_manifest_pdf', $plugin_admin_label, 'get_manifest_pdf' );
 		$this->loader->add_action( 'handle_bulk_actions-edit-shop_order', $plugin_admin_label, 'add_venipak_shipping_bulk_action_process', 10, 3  );
 		$this->loader->add_action( 'handle_bulk_actions-woocommerce_page_wc-orders', $plugin_admin_label, 'add_venipak_shipping_bulk_action_process', 10, 3  );
-
-		$this->loader->add_action( 'admin_notices', $plugin_admin_label, 'add_venipak_shipping_bulk_admin_notice' );
 	}
 
 	/**

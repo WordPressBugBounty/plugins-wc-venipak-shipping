@@ -339,7 +339,7 @@
       // matcher: matchCustom,
       templateResult,
       templateSelection,
-      width: 'resolve'
+      width: '100%',
     });
     const lspp = localStorage.getItem('lspp');
     if (lspp) {

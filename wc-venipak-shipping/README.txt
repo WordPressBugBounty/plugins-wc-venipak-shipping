@@ -2,8 +2,8 @@
 Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
-Tested up to: 6.6.1
-Stable tag: 1.22.3
+Tested up to: 6.6.2
+Stable tag: 1.22.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,14 @@ support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.22.5 =
+* Fix: improve shipping address validation
+
+= 1.22.4 =
+* Fix: pickup selection width
+* Fix: security issue
+* Fix: user billing address if shipping address is not available
 
 = 1.22.3 =
 * Fix: pickup selection validation error

@@ -198,7 +198,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         $this->venipak_is_status_change_disabled = $settings->get_option_by_key('shopup_venipak_shipping_field_isstatuschangedisabled');
         $this->shopup_venipak_shipping_field_maxpackproducts = intval($settings->get_option_by_key('shopup_venipak_shipping_field_maxpackproducts'));
         $this->shopup_venipak_shipping_field_forcedispatch = $settings->get_option_by_key('shopup_venipak_shipping_field_forcedispatch');
-
     }
 
     /**
@@ -404,6 +403,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
 
             $consignee = $document->createElement( 'consignee' );
             $shipment->appendChild($consignee);
+            $order_address = $this->get_order_address($order);
 
             if ($venipak_pickup_point) {
                 $name = $document->createElement( 'name', $venipak_pickup_point['name'] );
@@ -414,14 +414,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $address = $document->createElement( 'address', $venipak_pickup_point['address'] );
                 $post_code = $document->createElement( 'post_code', preg_replace('/\D/', '', $venipak_pickup_point['zip']));
             } else {
-                $company = $order->get_shipping_company() !== '' ? $order->get_shipping_company() : $order->get_billing_company();
-                $name_value = $company ? $company : $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name();
-                $name = $document->createElement( 'name', $name_value );
-                $country_value = $order->get_shipping_country() ? $order->get_shipping_country() : $order->get_billing_country();
-                $country = $document->createElement( 'country', $country_value );
-                $city = $document->createElement( 'city', $order->get_shipping_city() );
-                $address = $document->createElement( 'address', $order->get_shipping_address_1() . ' - ' . $order->get_shipping_address_2() );
-                $post_code = $document->createElement( 'post_code', preg_replace('/\D/', '', $order->get_shipping_postcode()) );
+                $name = $document->createElement( 'name', $order_address['full_name'] );
+                $country = $document->createElement( 'country', $order_address['country'] );
+                $city = $document->createElement( 'city', $order_address['city'] );
+                $address = $document->createElement( 'address', $order_address['address'] );
+                $post_code = $document->createElement( 'post_code', $order_address['postcode'] );
 
                 $comment_door_code = $document->createElement( 'comment_door_code', $order->get_meta('venipak_door_code') );
                 $comment_office_no = $document->createElement( 'comment_office_no', $order->get_meta('venipak_office_no') );
@@ -436,10 +433,9 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $consignee->appendChild($address);
             $consignee->appendChild($post_code);
 
-            $contact_person = $document->createElement( 'contact_person', $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() );
+            $contact_person = $document->createElement('contact_person', $order_address['full_name']);
             $consignee->appendChild($contact_person);
-            $contact_tel_data = $order->get_shipping_phone() !== '' ? $order->get_shipping_phone() : $order->get_billing_phone();
-            $contact_tel = $document->createElement( 'contact_tel', $contact_tel_data );
+            $contact_tel = $document->createElement( 'contact_tel', $order_address['phone'] );
             $consignee->appendChild($contact_tel);
             $contact_email = $document->createElement( 'contact_email', $order->get_billing_email() );
             $consignee->appendChild($contact_email);
@@ -648,5 +644,41 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         }
 
         return 0;
+    }
+
+    private function get_order_address($order) {
+        $ship_to_billing = get_option('woocommerce_ship_to_destination');
+        $is_shipping_address = $order->get_shipping_address_1() && $ship_to_billing !== 'billing_only';
+
+        $company = $order->get_shipping_company() !== '' ? $order->get_shipping_company() : $order->get_billing_company();
+        if ($company) {
+            $full_name = $company;
+        } elseif ($is_shipping_address) {
+            $full_name = $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name();
+        } else {
+            $full_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+        }
+        if ($is_shipping_address) {
+            $address = $order->get_shipping_address_1() . ' ' . $order->get_shipping_address_2();
+            $city = $order->get_shipping_city();
+            $postcode = $order->get_shipping_postcode();
+            $country = $order->get_shipping_country();
+            $phone = $order->get_shipping_phone();
+        } else {
+            $address = $order->get_billing_address_1() . ' ' . $order->get_billing_address_2();
+            $city = $order->get_billing_city();
+            $postcode = $order->get_billing_postcode();
+            $country = $order->get_billing_country();
+            $phone = $order->get_billing_phone();
+        }
+
+        return [
+            'full_name' => $full_name,
+            'address' => $address,
+            'city' => $city,
+            'postcode' => preg_replace('/\D/', '', $postcode),
+            'country' => $country,
+            'phone' => $phone,
+        ];
     }
 }
