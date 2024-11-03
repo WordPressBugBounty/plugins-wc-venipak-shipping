@@ -663,7 +663,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $city = $order->get_shipping_city();
             $postcode = $order->get_shipping_postcode();
             $country = $order->get_shipping_country();
-            $phone = $order->get_shipping_phone();
+            $phone = $order->get_shipping_phone() ? $order->get_shipping_phone() : $order->get_billing_phone();
         } else {
             $address = $order->get_billing_address_1() . ' ' . $order->get_billing_address_2();
             $city = $order->get_billing_city();
