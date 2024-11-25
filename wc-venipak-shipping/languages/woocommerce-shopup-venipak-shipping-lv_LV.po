@@ -1,26 +1,44 @@
-# Copyright (C) 2020 Woocommerce_Shopup_Venipak_Shipping
-# This file is distributed under the same license as the Woocommerce_Shopup_Venipak_Shipping package.
 msgid ""
 msgstr ""
 "Project-Id-Version: Woocommerce_Shopup_Venipak_Shipping\n"
-"POT-Creation-Date: 2021-11-16 16:26+0200\n"
-"PO-Revision-Date: \n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/trunk\n"
 "Last-Translator: \n"
 "Language-Team: \n"
-"Language: lv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2024-11-22T07:13:43+00:00\n"
+"PO-Revision-Date: \n"
+"Language: lv\n"
 "X-Poedit-Basepath: ..\n"
-"X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;"
-"_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;"
-"esc_html_e;esc_html_x:1,2c\n"
+"X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
 "X-Poedit-SourceCharset: UTF-8\n"
-"Plural-Forms: nplurals=3; plural=(n%10==0 || (n%100>=11 && n%100<=19) ? 0 : n"
-"%10==1 && n%100!=11 ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==0 || (n%100>=11 && n%100<=19) ? 0 : n%10==1 && n%100!=11 ? 1 : 2);\n"
 "X-Generator: Poedit 3.0\n"
 "X-Poedit-SearchPath-0: .\n"
 "X-Poedit-SearchPathExcluded-0: *.js\n"
+
+#. Plugin Name of the plugin
+#: woocommerce-shopup-venipak-shipping.php
+#: woocommerce-shopup-venipak-shipping.php:33
+msgid "Shipping with Venipak for WooCommerce"
+msgstr "Piegāde ar Venipak WooCommerce"
+
+#. Description of the plugin
+#: woocommerce-shopup-venipak-shipping.php
+#: woocommerce-shopup-venipak-shipping.php:34
+msgid "Venipak delivery method plugin for WooCommerce. Delivery via courier and pickup points."
+msgstr "Venipak piegādes metodes spraudnis WooCommerce. Piegāde caur kurjeru un saņemšanas punktiem."
+
+#. Author of the plugin
+#: woocommerce-shopup-venipak-shipping.php
+msgid "ShopUp"
+msgstr ""
+
+#. Author URI of the plugin
+#: woocommerce-shopup-venipak-shipping.php
+msgid "https://shopup.lt/"
+msgstr ""
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:15
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:15
@@ -45,7 +63,7 @@ msgstr "Tas kontrolē nosaukumu, kuru lietotājs redz norēķināšanās laikā.
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:41
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:115
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:123
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:135
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:41
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:116
 msgid "Description"
@@ -98,11 +116,8 @@ msgstr "Minimālā pasūtījuma summa bezmaksas piegādei"
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:70
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:71
-msgid ""
-"Users will need to spend this amount to get free shipping (if enabled above)."
-msgstr ""
-"Lietotājiem būs jāiztērē šī summa, lai saņemtu bezmaksas piegādi (ja tas ir "
-"iespējots iepriekš)."
+msgid "Users will need to spend this amount to get free shipping (if enabled above)."
+msgstr "Lietotājiem būs jāiztērē šī summa, lai saņemtu bezmaksas piegādi (ja tas ir iespējots iepriekš)."
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:86
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:87
@@ -111,130 +126,127 @@ msgstr "Atspējojiet šo metodi šīm nosūtīšanas klasēm"
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-courier.php:89
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-pickup.php:90
-msgid ""
-"If at least one has product has selected shipping classes it will disable "
-"this shipping method"
-msgstr ""
-"Ja vismaz vienam produktam ir atlasītas piegādes klases, šī nosūtīšanas "
-"metode tiks atspējota"
+msgid "If at least one has product has selected shipping classes it will disable this shipping method"
+msgstr "Ja vismaz vienam produktam ir atlasītas piegādes klases, šī nosūtīšanas metode tiks atspējota"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:245
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:146
-#, php-format
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:250
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:138
 msgid "Labels (%s)"
 msgstr "Etiķetes (%s)"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:245
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:147
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:250
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:139
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:197
 msgid "Manifest"
 msgstr "Manifests"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:277
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:281
 msgid "Order dispatched to Venipak"
 msgstr "Pasūtījums nosūtīts uz Venipak"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:103
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:115
 msgid "Venipak shipping"
 msgstr "Venipak kuģniecība"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:105
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:117
 msgid "Total weight"
 msgstr "Kopējais svars"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:105
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:117
 msgid "kg."
 msgstr "kilograms."
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:106
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:118
 msgid "Products count"
 msgstr "Produktu skaits"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:106
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:107
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:118
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:119
 msgid "vnt."
 msgstr "daudzums."
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:107
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:116
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:119
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:128
 msgid "Packages count"
 msgstr "Iepakojumi tiek skaitīti"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:109
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:164
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:121
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:177
 msgid "Pickup point"
 msgstr "Saņemšanas punkts"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:112
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:124
 msgid "Tracking number"
 msgstr "Izsekošanas numurs"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:114
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:126
 msgid "Dispatch status"
 msgstr "Nosūtīšanas statuss"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:116
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:128
 msgid "Add package"
 msgstr "Pievienot iepakojumu"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:119
-msgid "Width (m.)"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:131
+#, fuzzy
+msgid "Width"
 msgstr "Platums (m.)"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:120
-msgid "Height (m.)"
-msgstr "Augstums (m.)"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:132
+#, fuzzy
+msgid "Height"
+msgstr "Svars"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:121
-msgid "Length (m.)"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:133
+#, fuzzy
+msgid "Length"
 msgstr "Garums (m.)"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:122
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:134
 msgid "Weight"
 msgstr "Svars"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:124
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:169
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:136
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:183
 msgid "Remove"
 msgstr "Noņemt"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:133
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:185
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:145
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:199
 msgid "Remove package"
 msgstr "Izņemiet iepakojumu"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:139
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:151
 msgid "Global shipment"
 msgstr "Starptautiskais sūtījums"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:142
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:154
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:157
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:154
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:146
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:149
 msgid "Dispatch"
 msgstr "Nosūtīšana"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:145
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:157
 msgid "Dispatch one more time"
 msgstr "Nosūtīt vēl vienu reizi"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:154
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:166
 msgid "Print labels"
 msgstr "Izdrukājiet etiķetes"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:155
-#, php-format
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:167
 msgid "Print manifest (%s)"
 msgstr "Drukāt manifestu (%s)"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:334
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:389
 msgid "Waiting"
 msgstr "Nav nosūtīts"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:336
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:391
 msgid "Sent"
 msgstr "Nosūtīts"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:338
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:393
 msgid "Error"
 msgstr "Kļūda"
 
@@ -242,7 +254,11 @@ msgstr "Kļūda"
 msgid "Venipak dispatch selected"
 msgstr "Venipak nosūtīšana izvēlēta"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:107
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:79
+msgid "Get labels PDF"
+msgstr "Saņemt etiķetes PDF"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:93
 msgid "Venipak status"
 msgstr "Venipaka statuss"
 
@@ -252,15 +268,14 @@ msgstr "Venipaka statuss"
 msgid "Venipak Pickup Shipping Method"
 msgstr "Venipak pikapa piegādes metode"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-product.php:66
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-product.php:62
 msgid "Min. buyer age"
 msgstr "Min. pircēja vecums"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-product.php:69
-msgid ""
-"To be able to use this option, you should agree with your Venipak manager."
-msgstr ""
-"Lai varētu izmantot šo iespēju, jums jāvienojas ar savu Venipak vadītāju."
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-product.php:73
+#, fuzzy
+msgid "Venipak Total Shipments"
+msgstr "Venipaka statuss"
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:131
 msgid "Venipak settings"
@@ -296,9 +311,7 @@ msgstr "Pirmās pakas numurs"
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:205
 msgid "Enable venipak for all orders"
-msgstr ""
-"Iespējojiet VENIPAK funkcijas, pat ja pircējs ir izvēlējies citu piegādes "
-"veidu"
+msgstr "Iespējojiet VENIPAK funkcijas, pat ja pircējs ir izvēlējies citu piegādes veidu"
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:213
 msgid "Label format"
@@ -312,87 +325,91 @@ msgstr "A4"
 msgid "Sticker"
 msgstr "Uzlīme"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:229
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:228
+msgid "Return expiration days count"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:237
 msgid "Disable order status change"
 msgstr "Atspējot pasūtījuma statusa maiņu"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:238
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:246
 msgid "Max products in one pack"
 msgstr "Max produkti vienā iepakojumā"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:246
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:254
 msgid "Show google map"
 msgstr "Parādīt google karti"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:254
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:262
 msgid "Google map API_KEY"
 msgstr "Google map API_KEY"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:262
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:270
 msgid "Pickup options"
 msgstr "Saņemšanas punkts"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:269
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:277
 msgid "All"
 msgstr "Viss"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:270
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:278
 msgid "Only pickup"
 msgstr "Tikai saņemšanas punkt"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:271
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:279
 msgid "Only locker"
 msgstr "Tikai skapīši"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:278
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:286
 msgid "Show door code option"
 msgstr "Rādīt durvju koda opciju"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:286
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:294
 msgid "Show office number option"
 msgstr "Rādīt kabineta numura opciju"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:294
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:302
 msgid "Show delivery time option"
 msgstr "Rādīt piegādes laika opciju"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:302
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:310
 msgid "Company name"
 msgstr "Kompānijas nosaukums"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:311
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:319
 msgid "Company code"
 msgstr "Uzņēmuma kods"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:320
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:328
 msgid "Country"
 msgstr "Valsts"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:329
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:337
 msgid "City"
 msgstr "Pilsēta"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:338
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:346
 msgid "Address"
 msgstr "Adrese"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:347
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:355
 msgid "Post code"
 msgstr "Pasta indekss"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:356
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:364
 msgid "Contact person"
 msgstr "Kontaktpersona"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:365
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:373
 msgid "Contact phone number"
 msgstr "Kontakttālrunis"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:374
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:382
 msgid "Contact email address"
 msgstr "Kontaktpersonas e-pasta adrese"
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:509
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:517
 msgid "Settings saved"
 msgstr "Iestatījumi ir saglabāti"
 
@@ -434,45 +451,40 @@ msgstr "Jūsu izsekošanas pasūtījuma kods:"
 
 #: public/class-woocommerce-shopup-venipak-shipping-public-email.php:93
 #: public/class-woocommerce-shopup-venipak-shipping-public-email.php:98
+#: public/class-woocommerce-shopup-venipak-shipping-public.php:156
 msgid "Your tracking order code "
 msgstr "Jūsu izsekošanas pasūtījuma kods "
 
-#: public/class-woocommerce-shopup-venipak-shipping-public-email.php:128
+#: public/class-woocommerce-shopup-venipak-shipping-public-email.php:127
 msgid "Your selected pickup location"
 msgstr "Jūsu izvēlētā izņemšanas vieta"
 
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:111
-msgid "Pickups"
-msgstr "Saņemšanas punkts"
-
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:115
-msgid "Lockers"
-msgstr "Skapīši"
-
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:121
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:143
+#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:112
+#: public/woocommerce/checkout/venipak-shipping-terminals.php:11
+#: public/js/pickups-block/pickups-block.js:17
+#: public/js/pickups-block/pickups-block.js:84
 msgid "Select pickup point"
 msgstr "Izvēlieties pasta nodaļu / saņemšanas punktu"
 
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:123
-msgid "Show nearest locations"
-msgstr "Parādiet tuvākos punktus"
-
-#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:194
+#: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:151
+#: public/js/pickups-block/pickups-block.js:91
 msgid "Cod incompatible"
 msgstr "Diemžēl atlasītā"
 
-#: woocommerce-shopup-venipak-shipping.php:33
-msgid "Shipping with Venipak for WooCommerce"
-msgstr "Piegāde ar Venipak WooCommerce"
+#~ msgid "Height (m.)"
+#~ msgstr "Augstums (m.)"
 
-#: woocommerce-shopup-venipak-shipping.php:34
-msgid ""
-"Venipak delivery method plugin for WooCommerce. Delivery via courier and "
-"pickup points."
-msgstr ""
-"Venipak piegādes metodes spraudnis WooCommerce. Piegāde caur kurjeru un "
-"saņemšanas punktiem."
+#~ msgid "To be able to use this option, you should agree with your Venipak manager."
+#~ msgstr "Lai varētu izmantot šo iespēju, jums jāvienojas ar savu Venipak vadītāju."
+
+#~ msgid "Pickups"
+#~ msgstr "Saņemšanas punkts"
+
+#~ msgid "Lockers"
+#~ msgstr "Skapīši"
+
+#~ msgid "Show nearest locations"
+#~ msgstr "Parādiet tuvākos punktus"
 
 #~ msgid "Venipak shipping settings"
 #~ msgstr "Venipak nosūtīšanas iestatījumi"
@@ -482,9 +494,6 @@ msgstr ""
 
 #~ msgid "Dispatch error, please try dispatch one by one"
 #~ msgstr "Nosūtīšanas kļūda. Lūdzu, mēģiniet nosūtīt pa vienam"
-
-#~ msgid "Get labels PDF"
-#~ msgstr "Saņemt etiķetes PDF"
 
 #~ msgid "Show clusters"
 #~ msgstr "Rādīt kopas"

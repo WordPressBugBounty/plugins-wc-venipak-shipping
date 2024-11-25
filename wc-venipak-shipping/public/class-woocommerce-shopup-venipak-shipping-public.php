@@ -93,6 +93,20 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 			wp_enqueue_script( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array(), '1', true );
 			wp_enqueue_style( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css', array(), '1', true );
 			wp_add_inline_script( $this->plugin_name, "window.adminUrl = '" . admin_url(). "';" );
+
+			wp_enqueue_script(
+				'wc-pickup-machine-block',
+				plugin_dir_url( __FILE__ ) . 'js/pickups-block/pickups-block.min.js',
+				array( 'wp-element', 'wp-plugins', 'wp-data', 'wp-i18n', 'wc-blocks-data-store', 'wc-settings', 'wc-blocks-checkout' ),
+				$this->version,
+				true
+			);
+
+			wp_set_script_translations(
+				'wc-pickup-machine-block', // Script handle
+				'woocommerce-shopup-venipak-shipping', // Text domain
+				plugin_dir_path( dirname( __FILE__ ) )  // Path to the translations
+			);
 		}
 	}
 

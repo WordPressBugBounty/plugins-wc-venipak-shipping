@@ -157,19 +157,18 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Courier_Checkout {
 	 *
 	 * @since    1.0.0
 	 */
-	public function add_venipak_shipping_courier_update_order_meta( $order_id ) {
-		$order = wc_get_order($order_id);
-		if ( isset( $_POST['venipak_door_code'] )) {
-			$order->update_meta_data('venipak_door_code', sanitize_text_field( $_POST['venipak_door_code'] ) );
+	
+		public function add_venipak_shipping_courier_update_order_meta($order_id, $data) { 
+			$order = wc_get_order($order_id); 
+			if (isset($_POST['venipak_door_code'])) {
+				$order->update_meta_data('venipak_door_code', sanitize_text_field($_POST['venipak_door_code']));
+			} 
+			if (isset($_POST['venipak_office_no'])) {
+				$order->update_meta_data('venipak_office_no', sanitize_text_field($_POST['venipak_office_no']));
+			} 
+			if (isset($_POST['venipak_delivery_time'])) {
+				$order->update_meta_data('venipak_delivery_time', sanitize_text_field($_POST['venipak_delivery_time']));
+			} 
 			$order->save();
 		}
-		if ( isset( $_POST['venipak_office_no'] )) {
-			$order->update_meta_data('venipak_office_no', sanitize_text_field( $_POST['venipak_office_no'] ) );
-			$order->save();
-		}
-		if ( isset( $_POST['venipak_delivery_time'] )) {
-			$order->update_meta_data('venipak_delivery_time', sanitize_text_field( $_POST['venipak_delivery_time'] ) );
-			$order->save();
-		}
-	}
 }

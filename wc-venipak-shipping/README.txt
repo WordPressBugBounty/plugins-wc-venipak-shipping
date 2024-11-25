@@ -2,8 +2,8 @@
 Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
-Tested up to: 6.6.2
-Stable tag: 1.22.6
+Tested up to: 6.7.1
+Stable tag: 1.23.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,15 @@ support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.23.3 =
+* Fix: Blocks api fixes
+
+= 1.23.2 =
+* Feat: 6.7.1 wp support
+
+= 1.23.0 =
+* Feat: Blocks api support
 
 = 1.22.6 =
 * Fix: use billing address phone if phone is not available in shipping address

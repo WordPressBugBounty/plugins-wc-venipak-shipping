@@ -77,7 +77,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @param      string    $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version, $settings ) {
-
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 		$this->googlemap_api_key = $settings->get_option_by_key('shopup_venipak_shipping_field_googlemapapikey');
@@ -92,6 +91,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_pickup_options() {
+		
 		if (in_array('shopup_venipak_shipping_pickup_method', wc_get_chosen_shipping_method_ids())) {
 			wc_get_template(
 				'woocommerce/checkout/venipak-shipping-terminals.php',
@@ -110,20 +110,50 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 		if ( isset( $_POST['venipak_pickup_point'] ) && empty( $_POST['venipak_pickup_point'] ) )
 			wc_add_notice( ( __( 'Select pickup point', 'woocommerce-shopup-venipak-shipping' ) ), "error" );
 	}
-
+	 
+	 
 	/**
 	 *
 	 *
 	 * @since    1.0.0
 	 */
-	public function add_venipak_shipping_pickup_update_order_meta( $order_id ) {
-		if ( isset( $_POST['venipak_pickup_point'] )) {
-			$order = wc_get_order($order_id);
-			$order->update_meta_data('venipak_pickup_point', sanitize_text_field( $_POST['venipak_pickup_point'] ) );
+	public function add_venipak_shipping_pickup_update_order_meta($order_id, $data) { 
+		if (isset($_POST['venipak_pickup_point'])) { 
+			$order = wc_get_order($order_id); 
+			$order->update_meta_data('venipak_pickup_point', sanitize_text_field($_POST['venipak_pickup_point']));
 			$order->save();
 		}
 	}
+	
 
+ 
+	public function add_venipak_shipping_pickup_update_order_meta_block_checkout($order, $request) { 
+		$body = $request->get_body();
+		$fields = json_decode($body, true);  
+		if (isset($fields['shipping_address']['venipak_pickup_point'])) { 
+			$order->update_meta_data('venipak_pickup_point', sanitize_text_field($fields['shipping_address']['venipak_pickup_point']));
+			$order->save();  
+		}
+	}
+
+	/**
+	 *
+	 *
+	 * @since    1.14.9
+	 */
+	public function validate_cod( $fields, $errors ) {
+		$items = venipak_fetch_pickups();
+
+		if ($fields['payment_method'] === 'cod' && strpos($fields['shipping_method'][0], 'shopup_venipak_shipping_pickup_method') !== false) {
+			foreach($items as $point) {
+				if ($point["id"] == $_POST['venipak_pickup_point'] && $point["cod_enabled"] === 0) {
+					$errors->add( 'validation', __( 'Cod incompatible', 'woocommerce-shopup-venipak-shipping' ) );
+				}
+			}
+		}
+	}
+	
+	
 	/**
 	 *
 	 *
@@ -234,20 +264,5 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 		wp_die();
 	}
 
-	/**
-	 *
-	 *
-	 * @since    1.14.9
-	 */
-	public function validate_cod( $fields, $errors ) {
-		$items = venipak_fetch_pickups();
-		
-		if ($fields['payment_method'] === 'cod' && strpos($fields['shipping_method'][0], 'shopup_venipak_shipping_pickup_method') !== false) {
-			foreach($items as $point) {
-				if ($point["id"] === +$_POST['venipak_pickup_point'] && $point["cod_enabled"] === 0) {
-					$errors->add( 'validation', __( 'Cod incompatible', 'woocommerce-shopup-venipak-shipping' ) );
-				}
-			}
-		}
-	}
+	 
 }
