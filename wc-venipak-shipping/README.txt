@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.7.1
-Stable tag: 1.23.3
+Stable tag: 1.23.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,9 @@ support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.23.4 =
+* Fix: Blocks api translations
 
 = 1.23.3 =
 * Fix: Blocks api fixes
