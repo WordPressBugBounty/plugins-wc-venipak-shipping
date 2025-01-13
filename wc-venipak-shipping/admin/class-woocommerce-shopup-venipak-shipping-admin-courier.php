@@ -180,7 +180,7 @@ class WC_Shopup_Venipak_Shipping_Courier_Method extends WC_Shipping_Method {
     $min_amount_for_free_shipping = $this->get_option('min_amount_for_free_shipping');
 
     if ($min_amount_for_free_shipping > 0) {
-      $order_cost = WC()->cart->get_cart_contents_total() + WC()->cart->get_taxes_total();
+      $order_cost = WC()->cart->get_cart_contents_total() + WC()->cart->get_cart_contents_tax();
 
       if ($order_cost >= $min_amount_for_free_shipping) {
         $rate['cost'] = 0;

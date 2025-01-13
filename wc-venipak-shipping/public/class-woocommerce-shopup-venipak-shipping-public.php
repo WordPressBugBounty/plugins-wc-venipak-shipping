@@ -67,7 +67,37 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 		}
 		return $label;  
 	}
+     
 
+
+    /**
+     * 
+     * 
+     * 
+     * Functionality to show pickup options if product in cart is not excluded from lockers
+     */ 
+    public function show_pickup_if_product_included_in_locker( $rates, $package) {  
+        $exclude_shipping = false;
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data']; 
+    		$product = wc_get_product($product->get_id()); 
+            $venipak_is_locker_excluded = $product->get_meta('venipak_is_locker_excluded');
+            if ($venipak_is_locker_excluded) {
+                $exclude_shipping = true;
+                break;
+            }
+        } 
+        if ($exclude_shipping) {
+            foreach ($rates as $rate_id => $rate) { 
+    			if ('shopup_venipak_shipping_pickup_method' === $rate->method_id) {
+                    unset($rates[$rate_id]);  
+                }
+            }
+        } 
+        return $rates;
+    }
+    	
+    
 	/**
 	 * Register the stylesheets for the public-facing side of the site.
 	 *

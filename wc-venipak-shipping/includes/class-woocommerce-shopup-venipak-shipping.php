@@ -254,7 +254,7 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$plugin_public_email = new Woocommerce_Shopup_Venipak_Shipping_Public_Email( $this->get_plugin_name(), $this->get_version(), $this->settings );
 
 		$this->loader->add_action( 'woocommerce_cart_shipping_method_full_label', $plugin_public, 'add_venipak_shipping_logo', 10, 2 );
-
+		$this->loader->add_filter( 'woocommerce_package_rates', $plugin_public, 'show_pickup_if_product_included_in_locker', 10, 2 );
 		$this->loader->add_action( 'woocommerce_after_shipping_rate', $plugin_public_courier_checkout, 'add_venipak_shipping_courier_options', 20, 2 );
 		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public_courier_checkout, 'add_venipak_shipping_courier_update_order_meta', 10, 2 );
 
@@ -265,7 +265,7 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'wp_ajax_woocommerce_venipak_shipping_checkout_settings', $plugin_public_pickup_checkout, 'add_venipak_shipping_checkout_settings' );
 		$this->loader->add_action( 'wp_ajax_nopriv_woocommerce_venipak_shipping_checkout_settings', $plugin_public_pickup_checkout, 'add_venipak_shipping_checkout_settings' );
 		$this->loader->add_action( 'woocommerce_after_checkout_validation', $plugin_public_pickup_checkout, 'validate_cod', 9999, 2 );
-		$this->loader->add_action( 'woocommerce_checkout_process', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_checkout_process', 20 );
+		$this->loader->add_action( 'woocommerce_checkout_process', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_checkout_process', 5 );
 		$this->loader->add_action( 'woocommerce_email_before_order_table', $plugin_public_email, 'add_venipak_shipping_tracking_number', 10, 4 );
 		$this->loader->add_action( 'woocommerce_email_after_order_table', $plugin_public_email, 'add_venipak_shipping_selected_pickup_info', 10, 4 );
 		$this->loader->add_action( 'woocommerce_store_api_checkout_update_order_from_request', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_update_order_meta_block_checkout',20,2 );

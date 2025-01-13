@@ -78,6 +78,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		} else {
 			$this->shopup_venipak_shipping_field_maxpackproducts = 1000;
 		}
+		$iseventoptiondisabled = $settings->get_option_by_key('shopup_venipak_shipping_field_iseventoptiondisabled'); 
+		if ($iseventoptiondisabled !== null) {
+			$this->iseventoptiondisabled = 1; 
+		} else { 
+			$this->iseventoptiondisabled = 0;
+		}
 	}
 
 	/**
@@ -109,6 +115,16 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		$weight = $this->get_venipak_weight($order);
 		$product_count = $this->get_product_count($order);
 		$error_message = $this->get_venipak_error($order);
+		$is_event_option_disabled = $this->iseventoptiondisabled;
+		$order_event_detail = $this->get_order_event_detail($order);  
+		$pack_number = $this->get_order_pack_no($order);
+
+		if(isset($pack_number) && $pack_number != '')
+		{
+            $order_tracking_data = $this->get_order_tracking_data($pack_number , $order, $order_event_detail); 
+		}
+		 
+		$get_venipak_shipping_order_data = $this->get_venipak_shipping_order_data($order); 
 
 		?>
 		<br class="clear" />
@@ -123,6 +139,25 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		<?php if ($tracking_code) { ?>
 			<p><strong><?php echo __( 'Tracking number', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $tracking_code ?></p>
 		<?php } ?>
+
+		<?php if($pack_number && $is_event_option_disabled == 0 && ($order_event_detail == '' || $order_event_detail != 'Delivered')){ 
+				if(!empty($order_tracking_data) )  {
+				foreach($order_tracking_data as $data)
+				{  
+					?>
+					<span><?php echo isset($data['date']) ? $data['date'] : '';?><br><strong><?php echo isset($data['pack_status_text']) ? $data['pack_status_text'] : ''?></strong></span> 
+					<?php
+				}
+			}
+			}
+			elseif(isset($order_event_detail) && $order_event_detail == 'Delivered'  && $is_event_option_disabled == 0){
+				foreach($get_venipak_shipping_order_data['pack_status_text'] as $key => $pack_status_text)
+				{  
+					?>
+					<span><?php echo isset($get_venipak_shipping_order_data['date'][$key]) ? $get_venipak_shipping_order_data['date'][$key] : '';?><br><strong><?php echo isset($pack_status_text) ? $pack_status_text : ''?></strong></span> 
+					<?php
+				} 
+			}?> 
 			<p><strong><?php echo __( 'Dispatch status', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $status_title ?></p>
 			<div>
 				<p><?php echo __( 'Packages count', 'woocommerce-shopup-venipak-shipping' ); ?>: <button onclick="addPackage();" type="button"><?php echo __( 'Add package', 'woocommerce-shopup-venipak-shipping' ); ?></button></p>
@@ -269,6 +304,117 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		}
 		return null;
 	}
+
+	public function get_order_event_detail($order) {
+	    $order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
+
+	    if ($order_data && isset($order_data['event']) && is_array($order_data['event'])) {
+	        return end($order_data['event']);
+	    }
+
+	    return null;
+	}
+
+
+	public function get_order_tracking_data($pack_number, $order, $order_event_detail) { 
+
+		if( $order_event_detail != "Delivered")
+		{
+			$url = "https://tracking.venipak.com/api/v1/events?pack_no=" . $pack_number;
+
+        // WordPress API request
+        $response = wp_remote_get($url, [
+            'headers' => [
+                "Accept" => "application/json",
+                "Content-Type" => "application/json"
+            ]
+        ]);
+
+
+        // Check for errors
+        if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            error_log("API Request failed: $error_message");
+            return null;
+        }
+
+        // Extract response body and decode JSON
+        $body = wp_remote_retrieve_body($response);
+        $status = wp_remote_retrieve_response_code($response);
+
+        if ($status !== 200) {
+            error_log("API returned status code $status: $body");
+            return null;
+        }
+
+        $data = json_decode($body, true);
+        if (!is_array($data)) {
+            error_log("Failed to decode API response.");
+            return null;
+        }
+
+		$order_meta = json_decode($order->get_meta('venipak_shipping_order_data'), true); 
+		$ischanged = false;
+		if (is_array($order_meta) && isset($order_meta['pack_numbers']) && is_array($order_meta['pack_numbers'])) {
+		$order_meta['event'] = [];
+		$order_meta['date'] = [];
+		$order_meta['pack_status_text'] = [];
+		}
+
+		foreach ($data as $a) { 
+			if (is_array($order_meta) && isset($order_meta['pack_numbers']) && is_array($order_meta['pack_numbers'])) {  
+				$pack_numbers = $order_meta['pack_numbers'];
+				$ischanged = false; 
+				if (!empty($pack_numbers[0]) && isset($a['pack_no']) && !empty($a['pack_no']) ) {
+					$ischanged = true;
+					$order_meta['pack_numbers'][0] = $a['pack_no'];
+				} 
+				if (isset($a['event']) && !empty($a['event'])) {
+					$ischanged = true;
+					$order_meta['event'][] = $a['event'];
+				} 
+				if (isset($a['date']) && !empty($a['date'])) {
+					$ischanged = true;
+					$order_meta['date'][] = $a['date'];
+				}
+		 
+				if (isset($a['pack_status_text']) && !empty($a['pack_status_text'])) {
+					$ischanged = true;
+					$order_meta['pack_status_text'][] = $a['pack_status_text'];
+				} 
+				if ($ischanged) {
+					$order->update_meta_data('venipak_shipping_order_data', json_encode($order_meta));
+					$order->save();
+		 
+					$order_meta = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
+				}
+				} 	 
+		} 
+		return $data;
+		} 
+		else{
+			return [];
+		}
+	}
+	
+
+	public function get_venipak_shipping_order_data($order)
+	{
+		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
+		if ($order_data) {
+			return $order_data;;
+		}
+		return null;
+	}
+	
+	public function get_order_pack_no($order)
+	{
+		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true); 
+		if ($order_data) { 
+			return $order_data['pack_numbers'][0];
+		}
+		return null;
+	} 
 	
 
 

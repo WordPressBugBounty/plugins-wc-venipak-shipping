@@ -76,6 +76,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Product {
 			'description' => __( 'Total shipments for Venipak.', 'woocommerce' ),
 			'value'       => $product->get_meta('_venipak_total_shipments', true ) ? $product->get_meta('_venipak_total_shipments', true ) : $default_total_shipments,
 		) );
+		woocommerce_wp_checkbox( array(
+			'id'          => 'venipak_is_locker_excluded',
+			'label'       => __( 'Venipak Exclude from Lockers', 'woocommerce-shopup-venipak-shipping' ),
+			'description' => __( 'Check this box to exclude this product from Venipak lockers.', 'woocommerce' ),
+			'desc_tip'    => true, 
+			'cbvalue'     => 1, // The value saved in the database when checked
+			'checked'     => $product->get_meta('venipak_is_locker_excluded', true ) == 1,
+		) );		
 	}
 
 	public function save_venipak_shipping_options( $product_id ) {
@@ -91,6 +99,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Product {
 		if ( isset( $venipak_total_shipments ) ) {
 			$product->update_meta_data('_venipak_total_shipments', esc_attr( $venipak_total_shipments ) );
 		}
+		if (isset($_POST['venipak_is_locker_excluded'])) {
+			$product->update_meta_data('venipak_is_locker_excluded', 1);
+		} else {
+			$product->update_meta_data('venipak_is_locker_excluded', 0);
+		}
+
 
 		$product->save();
 	}

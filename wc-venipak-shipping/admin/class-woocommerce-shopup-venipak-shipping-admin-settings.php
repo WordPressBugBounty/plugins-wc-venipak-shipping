@@ -306,6 +306,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 			array( 'field' => 'shopup_venipak_shipping_field_isdeliverytimenabled')
 		);
 		add_settings_field(
+			'shopup_venipak_shipping_field_iseventoptiondisabled',
+			__( 'Disable delivery Event option', 'woocommerce-shopup-venipak-shipping' ),
+			array($this, 'shopup_venipak_shipping_field_checkbox_cb'),
+			'shopup_venipak_shipping',
+			'shopup_venipak_shipping_section_checkout',
+			array( 'field' => 'shopup_venipak_shipping_field_iseventoptiondisabled')
+		);
+		add_settings_field(
 			'shopup_venipak_shipping_field_sendername',
 			__( 'Company name', 'woocommerce-shopup-venipak-shipping' ),
 			array($this, 'shopup_venipak_shipping_field_text_cb'),
