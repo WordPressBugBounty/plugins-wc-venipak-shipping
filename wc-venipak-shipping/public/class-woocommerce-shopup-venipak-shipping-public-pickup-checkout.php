@@ -197,14 +197,16 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 			if ($product->is_type('variation')) {
 				$product = new WC_Product_Variation($cart_item['variation_id']);
 			}
-			$product_l = (float)$product->get_length() ?: 0;
-			$product_w = (float)$product->get_width() ?: 0;
-			$product_h = (float)$product->get_height() ?: 0;
-			$total_cart_volume += ($product_l * $product_w * $product_h) * $cart_item['quantity'];
+			$product_dimensions = [];
+			$product_dimensions[] = (float)$product->get_length() ?: 0;
+			$product_dimensions[] = (float)$product->get_width() ?: 0;
+			$product_dimensions[] = (float)$product->get_height() ?: 0;
+			sort($product_dimensions); 
+			$total_cart_volume += ($product_dimensions[0] * $product_dimensions[1] * $product_dimensions[2]) * $cart_item['quantity'];
 			if (
-				!($product_l <= $venipak_max_l && $product_w <= $venipak_max_w && $product_h <= $venipak_max_h) &&
-				!($product_l <= $lp_max_l && $product_w <= $lp_max_w && $product_h <= $lp_max_h)
-			) {
+				!($product_dimensions[0] <= $venipak_max_w && $product_dimensions[1] <= $venipak_max_h && $product_dimensions[2] <= $venipak_max_l) &&
+				!($product_dimensions[0] <= $lp_max_w && $product_dimensions[1] <= $lp_max_l && $product_dimensions[2] <= $lp_max_h)
+			) { 
 				$is_valid_for_locker = false;
 			}
 			$product_min_age = $product->get_meta('shopup_venipak_shipping_min_age');

@@ -38,3 +38,38 @@
 .wc-venipak-shipping-terminals {
   text-align: right;
 }
+
+.woocommerce-checkout table.shop_table {
+    table-layout: fixed !important;
+    width: 100% !important;
+}
+ 
+.woocommerce-checkout table.shop_table tfoot {
+    width: 100% !important;
+    display: table-footer-group;
+}
+
+.woocommerce-checkout table.shop_table tfoot tr {
+    display: table-row;
+    width: 100% !important;
+}
+ 
+.wc-venipak-shipping-terminals {
+    display: table-row;
+    width: 100% !important;
+}
+
+.wc-venipak-shipping-terminals td {
+    display: table-cell;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+ 
+ tfoot select,
+ tfoot #venipak_pickup_point,
+ tfoot #selected-pickup-info,
+ tfoot #venipak-map {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+} 
