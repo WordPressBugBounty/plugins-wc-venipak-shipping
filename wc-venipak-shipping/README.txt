@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.7.1
-Stable tag: 1.24.3
+Stable tag: 1.25.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.25.0 =
+* feat: Show delivery status in order list
+* fix: deprecation warning
 
 = 1.24.3 =
 * fix: Checkout page css

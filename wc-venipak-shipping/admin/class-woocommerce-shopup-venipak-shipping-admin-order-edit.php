@@ -58,6 +58,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 
 	private $shopup_venipak_shipping_field_maxpackproducts;
 
+	private $iseventoptiondisabled ;
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
