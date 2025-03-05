@@ -263,6 +263,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			return null;
 		}
 		$collection = venipak_fetch_pickups();
+		$venipak_pickup_entity = null;
+		
 		foreach ($collection as $key => $value) {
 			if ($value['id'] == $point_id) {
 				$venipak_pickup_entity = $value;
