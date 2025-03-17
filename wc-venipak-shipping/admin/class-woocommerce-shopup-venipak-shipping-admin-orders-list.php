@@ -119,15 +119,18 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
 		}
 
 		$venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
-
+        $status = '';
 		if ($venipak_shipping_order_data) {
 			$status = $venipak_shipping_order_data['status'];
 			$pack_numbers = $venipak_shipping_order_data['pack_numbers'];
 			$error_message = $venipak_shipping_order_data['error_message'];
 			$manifest = $venipak_shipping_order_data['manifest'];
-		} else {
-			return;
-		}
+		} 
+		// else {
+		// 	$status = $order->get_meta('venipak_shipping_status');
+		// 	$order_track_number = $order->get_meta('venipak_shipping_tracking');
+		// 	$error_message = $order->get_meta('venipak_shipping_error_message');
+		// }
 
         $tracking_data =  isset($pack_numbers) ? $this->get_order_tracking_data($pack_numbers, $order) : '';
 		$content = '<div id="shopup_venipak_shipping_wrapper_order_' . $post_id . '">';

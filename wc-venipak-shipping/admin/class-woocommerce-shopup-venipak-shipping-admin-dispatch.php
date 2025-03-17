@@ -247,7 +247,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         if ($result['status'] === 'ok') {
             $pack_numbers = $result['data']['pack_numbers'];
             $pack_numbers_string = implode(', ', $pack_numbers);
-            $content = '<div class="venipak-shipping-pack"><a class="button button-primary" title="' . $pack_numbers_string . '" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $order_id . '">' . sprintf( __( 'Labels (%s)', 'woocommerce-shopup-venipak-shipping' ), sizeof($pack_numbers)) . '</a> <a class="button button-primary" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=' . $order_id . '">' . __( 'Manifest', 'woocommerce-shopup-venipak-shipping' ) . '</a></div>';
+            $content = '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;"><a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" title="' . $pack_numbers_string . '" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-tag"></span></a> <a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-media-document"></span></a></div>';
             echo $content;
         } else {
             echo $result['data'];
