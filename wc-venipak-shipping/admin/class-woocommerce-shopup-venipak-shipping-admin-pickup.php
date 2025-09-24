@@ -129,11 +129,13 @@ class WC_Shopup_Venipak_Shipping_Pickup_Method extends WC_Shipping_Method {
    * @since    1.0.0
    */
   public function calculate_shipping( $package = Array() ) {
+    $shipping_tax_class = get_option('woocommerce_shipping_tax_class');
     $rate = [
       'id'      => $this->get_rate_id(),
       'label'   => $this->get_option('title'),
       'cost'    => $this->get_option('fee'),
-      'package' => $package
+      'package' => $package,
+      'tax_class' => $shipping_tax_class,
     ];
 
     $shipping_classes = $this->get_shipping_classes();
