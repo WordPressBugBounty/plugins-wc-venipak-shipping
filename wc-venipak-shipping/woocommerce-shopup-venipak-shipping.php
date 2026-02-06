@@ -15,7 +15,7 @@
  * @wordpress-plugin
  * Plugin Name:       Shipping with Venipak for WooCommerce
  * Description:       Venipak delivery method plugin for WooCommerce. Delivery via courier and pickup points.
- * Version:           1.25.3
+ * Version:           1.25.8
  * Author:            ShopUp
  * Author URI:        https://shopup.lt/
  * License:           GPL-2.0+
@@ -29,16 +29,16 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-// this is for plugin name and desc poedit auto detection
-$plugin_name = __( 'Shipping with Venipak for WooCommerce', 'woocommerce-shopup-venipak-shipping' );
-$plugin_description = __('Venipak delivery method plugin for WooCommerce. Delivery via courier and pickup points.', 'woocommerce-shopup-venipak-shipping' );
+// Plugin strings (kept as plain strings to avoid early translation loading).
+$plugin_name = 'Shipping with Venipak for WooCommerce';
+$plugin_description = 'Venipak delivery method plugin for WooCommerce. Delivery via courier and pickup points.';
 
 /**
  * Currently plugin version.
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'WOOCOMMERCE_SHOPUP_VENIPAK_SHIPPING_VERSION', '1.25.3' );
+define( 'WOOCOMMERCE_SHOPUP_VENIPAK_SHIPPING_VERSION', '1.25.8' );
 
 /**
  * The code that runs during plugin activation.

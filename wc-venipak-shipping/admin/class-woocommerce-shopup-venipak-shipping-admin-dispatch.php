@@ -433,7 +433,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $consignee->appendChild($address);
             $consignee->appendChild($post_code);
 
-            $contact_person = $document->createElement('contact_person', $order_address['full_name']);
+            $contact_person = $document->createElement('contact_person', $order_address['contact_person']);
             $consignee->appendChild($contact_person);
             $contact_tel = $document->createElement( 'contact_tel', $order_address['phone'] );
             $consignee->appendChild($contact_tel);
@@ -672,8 +672,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $phone = $order->get_billing_phone();
         }
 
+        $contact_person = $is_shipping_address ? $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name() : $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+
         return [
             'full_name' => $full_name,
+            'contact_person' => $contact_person,
             'address' => $address,
             'city' => $city,
             'postcode' => preg_replace('/\D/', '', $postcode),

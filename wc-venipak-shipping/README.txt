@@ -2,8 +2,8 @@
 Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
-Tested up to: 6.7.1
-Stable tag: 1.25.3
+Tested up to: 6.8.3
+Stable tag: 1.25.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,24 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.25.8 =
+* Fix: Stricter locker dimension check (oversize items no longer show lockers)
+* Tweak: Block checkout pickup selector stability (no double fetch, restore selection)
+* Fix: Remove shop-specific locker warning message from checkout (block + assets)
+
+= 1.25.7 =
+* Fix: Avoid early translation loading notice by delaying header translations
+
+= 1.25.6 =
+* Fix: Prevent Venipak map from loading twice and double zooming on checkout
+* Fix: Keep classic Google Maps markers (no Map ID needed) for compatibility
+
+= 1.25.5 =
+* Feature: Add animated loading spinner to pickup point selection dropdown while fetching pickup points
+
+= 1.25.4 =
+* Fix: Use correct contact person name instead of company name in consignee contact_person field
 
 = 1.25.3 =
 * Fix: Add address to pickup point in blocks list

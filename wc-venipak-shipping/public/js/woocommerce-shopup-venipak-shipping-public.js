@@ -73,6 +73,12 @@
 
 
   async function init() {
+    if (window.venipakShipping.isInitializing) return;
+    window.venipakShipping.isInitializing = true;
+    try {
+    // Show loading state
+    showPickupListLoading();
+    
     await fetchCheckoutSettings();
     let pickupPointsCollection = await fetchPickupPoints();
     const isPickupFilter = $('#is_pickup_filter').length ? $('#is_pickup_filter').is(":checked") : true;
@@ -89,29 +95,32 @@
       window.initGoogleMap();
     }
     initPickupSelect(pickupPointsCollection);
+    hidePickupListLoading();
     if (window.venipakShipping.settings.is_map_enabled) {
       drawPickupMarkers(pickupPointsCollection);
       initHomeDisplayButton();
       $('#venipak-map').show();
-      showAllMarkers();
-      setTimeout(() => {
-        const lspp = localStorage.getItem('lspp');
-        const map = window.venipakShipping.map;
-        if (map && lspp) {
-          window.venipakShipping.activeMarker = window.venipakShipping.markers.get(+lspp);
-          map.setCenter(window.venipakShipping.activeMarker.getPosition());
-          map.setZoom(15);
-          map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
-          map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
-        }
-      }, 2000);
+      const lspp = localStorage.getItem('lspp');
+      const map = window.venipakShipping.map;
+      if (map && lspp && window.venipakShipping.markers.has(+lspp)) {
+        window.venipakShipping.activeMarker = window.venipakShipping.markers.get(+lspp);
+        map.setCenter(window.venipakShipping.activeMarker.getPosition());
+        map.setZoom(15);
+        map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
+        map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+      } else {
+        showAllMarkers();
+      }
     }
     if ($('.points-filter').length) {
       $('.points-filter').change(() => {
         $('.points-filter').off('change');
-        $('.venipak_pickup_point').empty();
+        showPickupListLoading();
         init();
       });
+    }
+    } finally {
+      window.venipakShipping.isInitializing = false;
     }
   }
 
@@ -162,7 +171,7 @@
       });
       window.venipakShipping.markers.set(marker.id, markerEntity);
       markers.push(markerEntity);
-      markerEntity.addListener("click", () => {
+      markerEntity.addListener('click', () => {
         $('.venipak_pickup_point').val(marker.id).trigger('change');
         window.venipakShipping.activeMarker = markerEntity;
         setSelectedPickupInfo(marker);
@@ -295,7 +304,7 @@
     }
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.venipakShipping.settings.googlemap_api_key}&callback=initGoogleMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.venipakShipping.settings.googlemap_api_key}&callback=initGoogleMap&loading=async`;
       script.defer = true;
       document.head.appendChild(script);
       window.initGoogleMap = function() {
@@ -345,6 +354,29 @@
     });
   }
 
+  function showPickupListLoading() {
+    if ($('.venipak_pickup_point').length) {
+      if ($('.venipak_pickup_point').hasClass('select2-hidden-accessible')) {
+        // Select2 is initialized, update it
+        $('.venipak_pickup_point').html('<option value=""></option>').prop('disabled', true);
+        $('.venipak_pickup_point').trigger('change.select2');
+        $('.venipak_pickup_point').addClass('venipak-loading');
+        // Also add class to Select2 container
+        $('.venipak_pickup_point').next('.select2-container').find('.select2-selection--single').addClass('venipak-loading');
+      } else {
+        // Select2 not initialized yet
+        $('.venipak_pickup_point').html('<option value=""></option>').prop('disabled', true);
+        $('.venipak_pickup_point').addClass('venipak-loading');
+      }
+    }
+  }
+
+  function hidePickupListLoading() {
+    $('.venipak_pickup_point').prop('disabled', false).removeClass('venipak-loading');
+    // Remove from Select2 container as well
+    $('.venipak_pickup_point').next('.select2-container').find('.select2-selection--single').removeClass('venipak-loading');
+  }
+
   function initPickupSelect(collection) {
     const map = window.venipakShipping.map;
     $('.venipak_pickup_point').select2({
@@ -374,31 +406,6 @@
         });
       });
 
-      $('body').on('DOMSubtreeModified', '.select2-results', debounce(function () {
-        const markers = [];
-        const filteredRows = $('.select2-results__options li');
-        if (filteredRows.length === 1 && filteredRows[0].attributes.role.value === 'alert') {
-          findAddressByInputText();
-          return;
-        }
-        if (filteredRows.length - 1 === window.venipakShipping.markers.size) {
-          return;
-        }
-        filteredRows.map(function() {
-          if (!this.id) return;
-          const marker_id = this.id.substr(this.id.length - 4);
-          const markerEntity = window.venipakShipping.markers.get(+marker_id);
-          markers.push(markerEntity);
-        });
-        if (markers.length > 0) {
-          const bounds = new google.maps.LatLngBounds();
-          for (var i = 0; i < markers.length; i++) {
-            bounds.extend(markers[i].getPosition());
-          }
-          window.venipakShipping.map.setCenter(bounds.getCenter());
-          window.venipakShipping.map.fitBounds(bounds);
-        }
-      }, 1000));
     }
 
     function templateResult (item) {
@@ -436,11 +443,18 @@
     return new Promise((resolve, reject) => {
       if (window.venipakShipping.pickupPoints && $('#billing_country').val() === window.venipakShipping.selectedCountry) return resolve(window.venipakShipping.pickupPoints);
 
+      // Show loading if select exists
+      if ($('.venipak_pickup_point').length && $('.venipak_pickup_point').hasClass('select2-hidden-accessible')) {
+        showPickupListLoading();
+      }
+      
       $.get(window.adminUrl + 'admin-ajax.php', { 'action': 'woocommerce_venipak_shipping_pickup_points' }, function(data) {
         window.venipakShipping.pickupPoints = data;
         window.venipakShipping.selectedCountry = $('#billing_country').val();
         return resolve(window.venipakShipping.pickupPoints);
-      }, 'json');
+      }, 'json').fail(function() {
+        hidePickupListLoading();
+      });
     });
   }
 

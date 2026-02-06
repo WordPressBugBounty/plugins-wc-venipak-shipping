@@ -178,14 +178,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 
 		$maximum_weight_pickup = 10;
 
-		$venipak_max_l = 61 * $unit_multiplayer;
-		$venipak_max_w = 39.5 * $unit_multiplayer;
-		$venipak_max_h = 41 * $unit_multiplayer;
-		$venipak_max_volume = $venipak_max_l * $venipak_max_w * $venipak_max_h;
-		$lp_max_l = 61 * $unit_multiplayer;
-		$lp_max_w = 35 * $unit_multiplayer;
-		$lp_max_h = 75 * $unit_multiplayer;
-		$lp_max_volume = $lp_max_l * $lp_max_w * $lp_max_h;
+		// Locker internal max dimensions (cm by default)
+		$venipak_box_dims = [
+			61 * $unit_multiplayer,
+			39.5 * $unit_multiplayer,
+			41 * $unit_multiplayer,
+		];
+		sort( $venipak_box_dims ); // allow any orientation by comparing sorted dims
+		$venipak_max_volume = array_product( $venipak_box_dims );
 		
 		$is_valid_for_locker = true;
 		$is_valid_for_pickup = true;
@@ -197,16 +197,35 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 			if ($product->is_type('variation')) {
 				$product = new WC_Product_Variation($cart_item['variation_id']);
 			}
-			$product_dimensions = [];
-			$product_dimensions[] = (float)$product->get_length() ?: 0;
-			$product_dimensions[] = (float)$product->get_width() ?: 0;
-			$product_dimensions[] = (float)$product->get_height() ?: 0;
-			sort($product_dimensions); 
-			$total_cart_volume += ($product_dimensions[0] * $product_dimensions[1] * $product_dimensions[2]) * $cart_item['quantity'];
+			$product_dimensions = [
+				(float) $product->get_length() ?: 0,
+				(float) $product->get_width() ?: 0,
+				(float) $product->get_height() ?: 0,
+			];
+			// Variations often have empty dimensions while the parent product has them.
 			if (
-				!($product_dimensions[0] <= $venipak_max_w && $product_dimensions[1] <= $venipak_max_h && $product_dimensions[2] <= $venipak_max_l) &&
-				!($product_dimensions[0] <= $lp_max_w && $product_dimensions[1] <= $lp_max_l && $product_dimensions[2] <= $lp_max_h)
-			) { 
+				$product->is_type( 'variation' ) &&
+				$product_dimensions[0] <= 0 &&
+				$product_dimensions[1] <= 0 &&
+				$product_dimensions[2] <= 0 &&
+				! empty( $cart_item['product_id'] )
+			) {
+				$parent_product = wc_get_product( $cart_item['product_id'] );
+				if ( $parent_product ) {
+					$product_dimensions = [
+						(float) $parent_product->get_length() ?: 0,
+						(float) $parent_product->get_width() ?: 0,
+						(float) $parent_product->get_height() ?: 0,
+					];
+				}
+			}
+			sort( $product_dimensions );
+			$total_cart_volume += ( $product_dimensions[0] * $product_dimensions[1] * $product_dimensions[2] ) * $cart_item['quantity'];
+			if (
+				$product_dimensions[0] > $venipak_box_dims[0] ||
+				$product_dimensions[1] > $venipak_box_dims[1] ||
+				$product_dimensions[2] > $venipak_box_dims[2]
+			) {
 				$is_valid_for_locker = false;
 			}
 			$product_min_age = $product->get_meta('shopup_venipak_shipping_min_age');
@@ -221,7 +240,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 		if ($cart_total_weight > $maximum_weight_pickup) {
 			$is_valid_for_pickup = false;
 		}
-		if ($total_cart_volume > $venipak_max_volume && $total_cart_volume > $lp_max_volume) {
+		if ($total_cart_volume > $venipak_max_volume) {
 			$is_valid_for_locker = false;
 		}
 
