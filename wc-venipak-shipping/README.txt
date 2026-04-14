@@ -2,8 +2,8 @@
 Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
-Tested up to: 6.8.3
-Stable tag: 1.25.8
+Tested up to: 6.9.4
+Stable tag: 1.25.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,9 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.25.9 =
+* Stability improvements for checkout scripts
 
 = 1.25.8 =
 * Fix: Stricter locker dimension check (oversize items no longer show lockers)

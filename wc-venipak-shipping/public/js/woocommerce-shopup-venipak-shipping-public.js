@@ -13,7 +13,7 @@
       const selectNode = $('select[name="venipak_pickup_point"]');
 
       // Add the custom field to the payload
-      if (selectNode) {
+      if (selectNode.length) {
         const data = settings.data ? settings.data.split('&') : [];
         const value = selectNode.val();
         data.push('venipak_pickup_point=' + encodeURIComponent(value));
@@ -26,11 +26,8 @@
     // Function to handle the appearance of the select element
     function initializeSelect() {
       if ($('#venipak_pickup_point').length) {
-        console.log('Select element is already in the DOM');
-        // Actions to initialize the select element go here
         window.venipakShipping.init();
       } else {
-        console.log('Waiting for select element to appear...');
         observeDOM('#venipak_pickup_point', initializeSelect);
       }
     }
@@ -45,7 +42,6 @@
               (node.querySelector && node.querySelector(selector))
             );
             if (elementFound) {
-              console.log(`${selector} is now in the DOM`);
               callback();
               observer.disconnect();  // Stop observing after initialization
             }
@@ -60,7 +56,6 @@
     // Function to handle selection logic
     function handleSelection() {
       const selectedShippingMethod = $('input[name="shipping_method[0]"]:checked').val() || $('input[name="shipping_method[0]"]').val();
-      console.log('Shipping method selected:', selectedShippingMethod);
       if (selectedShippingMethod && selectedShippingMethod.includes('shopup_venipak_shipping_pickup_method')) {
         initializeSelect();
       }
@@ -138,7 +133,7 @@
       const city = $('#billing_city').val();
       const postcode = $('#billing_postcode').val();
       let position = await getUserLocation(address, city, postcode);
-      if (!position && !position.lat && !position.lng) {
+      if (!position || !position.lat || !position.lng) {
         position = await getLocationByIp();
       }
       if (window.venipakShipping.homeMarker) {
@@ -240,58 +235,52 @@
 
     function getName(day) {
       switch (day) {
-        case 0:
-          return 'I';
-          break;
-        case 1:
-          return 'II';
-          break;
-        case 2:
-          return 'III';
-          break;
-        case 3:
-          return 'IV';
-          break;
-        case 4:
-          return 'V';
-          break;
-        case 5:
-          return 'VI';
-          break;
-        case 6:
-          return 'VII';
-          break;
+        case 0: return 'I';
+        case 1: return 'II';
+        case 2: return 'III';
+        case 3: return 'IV';
+        case 4: return 'V';
+        case 5: return 'VI';
+        case 6: return 'VII';
       }
     }
   }
 
-  function getUserLocation(address, city, postcode) {
-    return new Promise(async (resolve, reject) => {
-      if (!address) {
-        const position = await getLocationByIp();
-        resolve(position);
-      } else  {
-        $.get(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${address}+${city}+${postcode}&key=${window.venipakShipping.settings.googlemap_api_key}`,
-          function(data) {
-            if (data.results.length === 0) {
-              resolve(null);
-            }
-            if (data.results[0] && data.results[0].geometry) {
-              return resolve(data.results[0].geometry.location);
-            }
-            return resolve();
-          },'json');
-      }
+  async function getUserLocation(address, city, postcode) {
+    if (!address) {
+      return await getLocationByIp();
+    }
+    return new Promise((resolve) => {
+      $.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${address}+${city}+${postcode}&key=${window.venipakShipping.settings.googlemap_api_key}`,
+        function(data) {
+          if (!data.results || data.results.length === 0) {
+            return resolve(null);
+          }
+          if (data.results[0] && data.results[0].geometry) {
+            return resolve(data.results[0].geometry.location);
+          }
+          return resolve(null);
+        },'json')
+      .fail(function() {
+        resolve(null);
+      });
     });
   }
 
   function getLocationByIp() {
-    return new Promise ((resolve) => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        return resolve(null);
+      }
       navigator.geolocation.getCurrentPosition(
         function(position) {
           return resolve({ lat: position.coords.latitude, lng: position.coords.longitude });
-        }
+        },
+        function() {
+          return resolve(null);
+        },
+        { timeout: 10000 }
       );
     });
   }
@@ -308,7 +297,7 @@
       script.defer = true;
       document.head.appendChild(script);
       window.initGoogleMap = function() {
-        if (typeof google === undefined) return;
+        if (typeof google === 'undefined') return;
         window.venipakShipping.map = new google.maps.Map(document.getElementById("venipak-map"));
         return resolve(window.venipakShipping.map);
       }
@@ -337,20 +326,22 @@
   }
 
   function getCustomLocation(keyword) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       $.get(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${keyword}&key=${window.venipakShipping.settings.googlemap_api_key}`,
         (data) => {
-          if (data.results.length === 0) {
-            resolve(null);
+          if (!data.results || data.results.length === 0) {
+            return resolve(null);
           }
-          if (data.results[0] && data.results[0].geometry.location) {
+          if (data.results[0] && data.results[0].geometry && data.results[0].geometry.location) {
             return resolve(data.results[0].geometry.location);
           }
-          return data.results;
+          return resolve(null);
         },
         'json',
-      );
+      ).fail(function() {
+        resolve(null);
+      });
     });
   }
 
