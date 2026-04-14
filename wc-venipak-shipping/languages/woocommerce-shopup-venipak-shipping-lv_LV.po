@@ -466,6 +466,12 @@ msgstr "Jūsu izvēlētā izņemšanas vieta"
 msgid "Select pickup point"
 msgstr "Izvēlieties pasta nodaļu / saņemšanas punktu"
 
+#: public/woocommerce/checkout/venipak-shipping-terminals.php:16
+#: public/woocommerce/checkout/venipak-shipping-terminals-inline.php:10
+#: public/js/pickups-block/pickups-block.js:25
+msgid "Select Venipak pickup point:"
+msgstr "Izvēlieties Venipak saņemšanas punktu:"
+
 #: public/class-woocommerce-shopup-venipak-shipping-public-pickup-checkout.php:151
 #: public/js/pickups-block/pickups-block.js:91
 msgid "Cod incompatible"

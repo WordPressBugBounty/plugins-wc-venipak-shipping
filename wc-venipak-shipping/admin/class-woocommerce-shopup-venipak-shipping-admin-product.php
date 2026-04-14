@@ -89,15 +89,13 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Product {
 	public function save_venipak_shipping_options( $product_id ) {
 		$product = wc_get_product($product_id);
 
-		$shopup_venipak_shipping_min_age = $_POST['shopup_venipak_shipping_min_age'];
-		if ( isset( $shopup_venipak_shipping_min_age ) ) {
-			$product->update_meta_data('shopup_venipak_shipping_min_age', esc_attr( $shopup_venipak_shipping_min_age ) );
+		if ( isset( $_POST['shopup_venipak_shipping_min_age'] ) ) {
+			$product->update_meta_data('shopup_venipak_shipping_min_age', sanitize_text_field( $_POST['shopup_venipak_shipping_min_age'] ) );
 		}
 
 		// Save the new field _venipak_total_shipments
-		$venipak_total_shipments = $_POST['_venipak_total_shipments'];
-		if ( isset( $venipak_total_shipments ) ) {
-			$product->update_meta_data('_venipak_total_shipments', esc_attr( $venipak_total_shipments ) );
+		if ( isset( $_POST['_venipak_total_shipments'] ) ) {
+			$product->update_meta_data('_venipak_total_shipments', sanitize_text_field( $_POST['_venipak_total_shipments'] ) );
 		}
 		if (isset($_POST['venipak_is_locker_excluded'])) {
 			$product->update_meta_data('venipak_is_locker_excluded', 1);

@@ -222,7 +222,6 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'wp_ajax_woocommerce_shopup_venipak_shipping_get_manifest_pdf', $plugin_admin_label, 'get_manifest_pdf' );
 		$this->loader->add_action( 'handle_bulk_actions-edit-shop_order', $plugin_admin_label, 'add_venipak_shipping_bulk_action_process', 10, 3  );
 		$this->loader->add_action( 'handle_bulk_actions-woocommerce_page_wc-orders', $plugin_admin_label, 'add_venipak_shipping_bulk_action_process', 10, 3  );
-		$this->loader->add_action( 'handle_bulk_actions-woocommerce_page_wc-orders', $plugin_admin_label, 'add_venipak_shipping_bulk_action_process', 10, 3  );
 	}
 
 	/**
@@ -234,7 +233,7 @@ class Woocommerce_Shopup_Venipak_Shipping {
 	 */
 	private function define_public_hooks() {
 
-		$plugin_public = new Woocommerce_Shopup_Venipak_Shipping_Public( $this->get_plugin_name(), $this->get_version() );
+		$plugin_public = new Woocommerce_Shopup_Venipak_Shipping_Public( $this->get_plugin_name(), $this->get_version(), $this->settings );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
@@ -258,7 +257,11 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'woocommerce_after_shipping_rate', $plugin_public_courier_checkout, 'add_venipak_shipping_courier_options', 20, 2 );
 		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public_courier_checkout, 'add_venipak_shipping_courier_update_order_meta', 10, 2 );
 
-		$this->loader->add_action( 'woocommerce_review_order_after_shipping', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_options', 20, 2 );
+		if ( $plugin_public_pickup_checkout->get_pickup_position() === 'inline' ) {
+			$this->loader->add_action( 'woocommerce_after_shipping_rate', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_options_inline', 20, 2 );
+		} else {
+			$this->loader->add_action( 'woocommerce_review_order_after_shipping', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_options', 20, 2 );
+		}
 		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_update_order_meta' ,10,2);
 		$this->loader->add_action( 'wp_ajax_woocommerce_venipak_shipping_pickup_points', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_points' );
 		$this->loader->add_action( 'wp_ajax_nopriv_woocommerce_venipak_shipping_pickup_points', $plugin_public_pickup_checkout, 'add_venipak_shipping_pickup_points' );

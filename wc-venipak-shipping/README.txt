@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.9.4
-Stable tag: 1.25.9
+Stable tag: 1.26.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,19 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.0 =
+* Security: Nonce verification and capability checks on admin AJAX handlers
+* Security: Escape all admin output to prevent XSS
+* Fix: Atomic pack number generation prevents duplicates on concurrent dispatches
+* Fix: Duplicate bulk action hook causing double label processing
+* Fix: Duplicate volume element in shipment XML
+* Fix: Memory leaks in map markers and select2 event listeners
+* Feature: Configurable pickup selector position (inline or after all shipping methods)
+* Feature: Configurable pickup selector width
+* Feature: "Select Venipak pickup point:" label on checkout dropdown
+* Tweak: Pickup dropdown uses cached data instead of re-fetching on selection
+* Translations: Added LT, ET, LV translations for new strings
 
 = 1.25.9 =
 * Stability improvements for checkout scripts

@@ -6,6 +6,13 @@
     init,
   };
 
+  function escHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
   $(document).ajaxSend(function (event, jqXHR, settings) {
     // Check if this is the WooCommerce checkout request
     if (settings.url.includes('wc-ajax=checkout')) {
@@ -155,6 +162,14 @@
     const pickup_image = window.venipakShipping.settings.pickup_marker;
     const locker_image = window.venipakShipping.settings.locker_marker;
     const markers = [];
+    // Clear old markers before drawing new ones
+    window.venipakShipping.markers.forEach(function(marker) {
+      marker.setMap(null);
+    });
+    window.venipakShipping.markers.clear();
+    if (window.venipakShipping.markerClusterer) {
+      window.venipakShipping.markerClusterer.clearMarkers();
+    }
     window.venipakShipping.mapBounds = new google.maps.LatLngBounds();
     for (let i = 0; i < pickupPointsCollection.length; i++) {
       const marker = pickupPointsCollection[i];
@@ -182,12 +197,12 @@
       });
       window.venipakShipping.mapBounds.extend(markerEntity.getPosition());
     }
-    new markerClusterer.MarkerClusterer({ map, markers });
+    window.venipakShipping.markerClusterer = new markerClusterer.MarkerClusterer({ map, markers });
   }
 
   function getInfoWindow(marker) {
     const { display_name, address, city, zip, working_hours } = marker;
-    let contentString = `<span>${display_name}<br /><small>${address}, ${city}, ${zip}</small></span>`;
+    let contentString = `<span>${escHtml(display_name)}<br /><small>${escHtml(address)}, ${escHtml(city)}, ${escHtml(zip)}</small></span>`;
     if (working_hours) {
       contentString += getWorkingHours(working_hours);
     }
@@ -306,7 +321,7 @@
 
   function setSelectedPickupInfo(data) {
     const { id, display_name, address, city, working_hours } = data;
-    let result = `<div><div><b>${display_name}</b></div><div>${address}, ${city}</div></div>`;
+    let result = `<div><div><b>${escHtml(display_name)}</b></div><div>${escHtml(address)}, ${escHtml(city)}</div></div>`;
     if (working_hours) {
       result += getWorkingHours(working_hours);
     }
@@ -385,16 +400,17 @@
       $('.venipak_pickup_point').val(lspp).trigger('change');
     }
     if (map) {
+      $('.venipak_pickup_point').off('select2:select');
       $('.venipak_pickup_point').on('select2:select', function (e) {
-        fetchPickupPoints().then((markersCollection) => {
-          const markerData = markersCollection.find(row => row.id === +e.params.data.id);
+        const markerData = collection.find(row => row.id === +e.params.data.id);
+        if (markerData && window.venipakShipping.markers.has(markerData.id)) {
           window.venipakShipping.activeMarker = window.venipakShipping.markers.get(markerData.id);
           map.setCenter(window.venipakShipping.activeMarker.getPosition());
           map.setZoom(15);
           map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
           map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
           setSelectedPickupInfo(markerData);
-        });
+        }
       });
 
     }
@@ -402,7 +418,7 @@
     function templateResult (item) {
       if (!item.id) return item.text;
       const [text, address, city, zip] = item.text.split('|');
-      return $(`<span>${text}<br /><small>${address}, ${city}, ${zip}</small></span>`);
+      return $(`<span>${escHtml(text)}<br /><small>${escHtml(address)}, ${escHtml(city)}, ${escHtml(zip)}</small></span>`);
     }
     function templateSelection (item) {
       if (!item.id) return item.text;
@@ -456,7 +472,9 @@
       $.get(window.adminUrl + 'admin-ajax.php', { 'action': 'woocommerce_venipak_shipping_checkout_settings' }, function(data) {
         window.venipakShipping.settings = data;
         return resolve(window.venipakShipping.settings);
-      }, 'json');
+      }, 'json').fail(function() {
+        resolve(null);
+      });
     });
   }
 

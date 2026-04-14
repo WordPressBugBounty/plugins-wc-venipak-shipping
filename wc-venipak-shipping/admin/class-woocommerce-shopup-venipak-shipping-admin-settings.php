@@ -71,14 +71,68 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 	 */
 	public function set_settings() {
 		$this->settings = (array) get_option( 'shopup_venipak_shipping_settings' );
+		$this->migrate_pack_number();
 	}
 
 	/**
+	 * Migrate pack number from settings array to standalone option for atomic updates.
 	 *
+	 * @since    1.25.10
+	 */
+	private function migrate_pack_number() {
+		if ( get_option( 'venipak_pack_number' ) === false ) {
+			$value = isset( $this->settings['shopup_venipak_shipping_field_firstpacknumber'] )
+				? intval( $this->settings['shopup_venipak_shipping_field_firstpacknumber'] )
+				: 1000001;
+			add_option( 'venipak_pack_number', $value, '', 'no' );
+		}
+	}
+
+	/**
+	 * Get current pack number.
 	 *
+	 * @since    1.25.10
+	 */
+	public function get_pack_number() {
+		return intval( get_option( 'venipak_pack_number', 1000001 ) );
+	}
+
+	/**
+	 * Atomically reserve a range of pack numbers.
+	 * Returns the first number in the reserved range.
+	 *
+	 * @since    1.25.10
+	 * @param    int    $count    Number of pack numbers to reserve.
+	 * @return   int              The starting pack number (exclusive — first usable is start + 1).
+	 */
+	public function reserve_pack_numbers( $count ) {
+		global $wpdb;
+		$count = intval( $count );
+		if ( $count <= 0 ) {
+			return $this->get_pack_number();
+		}
+
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE {$wpdb->options} SET option_value = option_value + %d WHERE option_name = 'venipak_pack_number'",
+			$count
+		) );
+
+		$new_value = $this->get_pack_number();
+		// The starting number is new_value - count (the value before increment).
+		$start = $new_value - $count;
+
+		// Keep settings array in sync for the settings page display.
+		$this->settings['shopup_venipak_shipping_field_firstpacknumber'] = $new_value;
+		update_option( 'shopup_venipak_shipping_settings', $this->settings );
+
+		return $start;
+	}
+
+	/**
 	 * @since    1.5.4
 	 */
 	public function update_last_pack_number($last_pack_number) {
+		update_option( 'venipak_pack_number', intval( $last_pack_number ) );
 		$this->settings['shopup_venipak_shipping_field_firstpacknumber'] = $last_pack_number;
 		update_option('shopup_venipak_shipping_settings', $this->settings);
 		$this->set_settings();
@@ -117,7 +171,21 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 	 * @since    1.0.0
 	 */
 	public function register_settings() {
-		register_setting( 'shopup_venipak_shipping_settings_group', 'shopup_venipak_shipping_settings' );
+		register_setting( 'shopup_venipak_shipping_settings_group', 'shopup_venipak_shipping_settings', array(
+			'sanitize_callback' => array( $this, 'sanitize_settings' ),
+		) );
+	}
+
+	/**
+	 * Sync pack number to standalone option when settings are saved.
+	 *
+	 * @since    1.25.10
+	 */
+	public function sanitize_settings( $input ) {
+		if ( isset( $input['shopup_venipak_shipping_field_firstpacknumber'] ) ) {
+			update_option( 'venipak_pack_number', intval( $input['shopup_venipak_shipping_field_firstpacknumber'] ) );
+		}
+		return $input;
 	}
 
 	/**
@@ -282,6 +350,29 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 			)
 		);
 		add_settings_field(
+			'shopup_venipak_shipping_field_pickupposition',
+			__( 'Pickup selector position', 'woocommerce-shopup-venipak-shipping' ),
+			array($this, 'shopup_venipak_shipping_field_radio_cb'),
+			'shopup_venipak_shipping',
+			'shopup_venipak_shipping_section_checkout',
+			array(
+				'field' => 'shopup_venipak_shipping_field_pickupposition',
+				'options' => array(
+					'after_shipping' => __( 'After all shipping methods', 'woocommerce-shopup-venipak-shipping' ),
+					'inline' => __( 'Inline after pickup method', 'woocommerce-shopup-venipak-shipping' ),
+				),
+				'default' => 'after_shipping'
+			)
+		);
+		add_settings_field(
+			'shopup_venipak_shipping_field_pickupwidth',
+			__( 'Pickup selector width (px)', 'woocommerce-shopup-venipak-shipping' ),
+			array($this, 'shopup_venipak_shipping_field_text_cb'),
+			'shopup_venipak_shipping',
+			'shopup_venipak_shipping_section_checkout',
+			array( 'field' => 'shopup_venipak_shipping_field_pickupwidth', 'default' => 275, 'required' => false )
+		);
+		add_settings_field(
 			'shopup_venipak_shipping_field_isdoorcodeenabled',
 			__( 'Show door code option', 'woocommerce-shopup-venipak-shipping' ),
 			array($this, 'shopup_venipak_shipping_field_checkbox_cb'),
@@ -438,7 +529,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 		echo "<option/>";
 		foreach($items as $item) {
 			$selected = ($value == $item['value']) ? 'selected="selected"' : '';
-			echo "<option value='" . $item['value'] . "' $selected>" . $item['name'] . "</option>";
+			echo "<option value='" . esc_attr($item['value']) . "' $selected>" . esc_html($item['name']) . "</option>";
 		}
 		echo "</select>";
 	}
@@ -454,7 +545,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 		$required = array_key_exists('required', $params) ? 'required' : '';
 		$value = $this->get_option_by_key($field) ? $this->get_option_by_key($field) : $default_value;
 
-		echo "<input type='text' name='shopup_venipak_shipping_settings[$field]' value='$value' {$required} />";
+		echo "<input type='text' name='shopup_venipak_shipping_settings[" . esc_attr($field) . "]' value='" . esc_attr($value) . "' {$required} />";
 	}
 
 
@@ -468,7 +559,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 		$default_value = array_key_exists('default', $params) ? $params['default'] : null;
 		$value = $this->get_option_by_key($field) ? $this->get_option_by_key($field) : $default_value;
 
-		echo "<input type='password' name='shopup_venipak_shipping_settings[$field]' value='$value' required/>";
+		echo "<input type='password' name='shopup_venipak_shipping_settings[" . esc_attr($field) . "]' value='" . esc_attr($value) . "' required/>";
 	}
 
 	/**

@@ -40,6 +40,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 	 */
 	private $version;
 
+	private $settings;
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -47,10 +49,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 	 * @param      string    $plugin_name       The name of the plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
+	public function __construct( $plugin_name, $version, $settings = null ) {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
+		$this->settings = $settings;
 
 		add_shortcode( 'venipak_tracking', array( $this, 'venipak_shipping_status_shortcode' ) );
 	}
@@ -106,7 +109,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 	public function enqueue_styles() {
 		// Load styles only on cart and checkout pages
 		if ( is_cart() || is_checkout() ) {
-			wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/woocommerce-shopup-venipak-shipping-public.css?v=' . $this->version );
+			wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/woocommerce-shopup-venipak-shipping-public.css', array(), $this->version );
+			$pickup_width = $this->settings->get_option_by_key('shopup_venipak_shipping_field_pickupwidth');
+			if ( $pickup_width ) {
+				wp_add_inline_style( $this->plugin_name, ':root { --venipak-pickup-width: ' . intval( $pickup_width ) . 'px; }' );
+			}
 		}
 	}
 

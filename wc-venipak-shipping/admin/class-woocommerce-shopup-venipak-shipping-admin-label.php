@@ -124,11 +124,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 		
 
 	public function get_label_pdf() {
-		$order_id = $_GET['order_id'];
-		if (trim($order_id) === '') {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( -1, 403 );
+		}
+		$order_id = isset( $_GET['order_id'] ) ? intval( $_GET['order_id'] ) : 0;
+		if ( ! $order_id ) {
 			wp_die();
 		}
-		$order = wc_get_order($_GET['order_id']);
+		$order = wc_get_order( $order_id );
 		$venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
 		$pack_numbers = $venipak_shipping_order_data['pack_numbers'];
 
@@ -154,11 +157,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 
 
 	public function get_manifest_pdf() {
-		$order_id = $_GET['order_id'];
-		if (trim($order_id) === '') {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( -1, 403 );
+		}
+		$order_id = isset( $_GET['order_id'] ) ? intval( $_GET['order_id'] ) : 0;
+		if ( ! $order_id ) {
 			wp_die();
 		}
-		$order = wc_get_order($_GET['order_id']);
+		$order = wc_get_order( $order_id );
 		$venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
 		$manifest = $venipak_shipping_order_data['manifest'];
 

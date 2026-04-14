@@ -14,6 +14,7 @@ function shopup_venipak_shipping_dispatch_order_by_id({ id, newDispatch }) {
 	const data = {
 		action: newDispatch ? 'woocommerce_shopup_venipak_shipping_dispatch_force' : 'woocommerce_shopup_venipak_shipping_dispatch',
 		order_id: id,
+		nonce: venipakAdmin.nonce,
 		packs,
 	}
 	if (jQuery('#shopup_venipak_shipping_global').is(':checked')) {
@@ -22,5 +23,7 @@ function shopup_venipak_shipping_dispatch_order_by_id({ id, newDispatch }) {
 	jQuery('#shopup_venipak_shipping_wrapper_order_' + id).html('<span style="visibility: visible;" class="spinner"></span>');
 	jQuery.post(ajaxurl, data, function(response) {
 		jQuery('#shopup_venipak_shipping_wrapper_order_' + id).html(response);
+	}).fail(function() {
+		jQuery('#shopup_venipak_shipping_wrapper_order_' + id).html('<p style="color: red;">Request failed. Please try again.</p>');
 	});
 }

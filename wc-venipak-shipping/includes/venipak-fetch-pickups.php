@@ -3,14 +3,18 @@
 function venipak_fetch_pickups($country = null) {
   $upload_dir = wp_upload_dir();
   if (!file_exists($upload_dir['basedir'] . '/venipak')) {
-    mkdir($upload_dir['basedir'] . '/venipak', 0777, true);
+    mkdir($upload_dir['basedir'] . '/venipak', 0755, true);
   }
   $file_path = $upload_dir['basedir'] . '/venipak/pickups.json';
   if (!file_exists($file_path) || (time() - filemtime($file_path) > 86400)) {
     _venipak_fetch_pickups_request($file_path);
   }
 
-  return json_decode(file_get_contents($file_path), true);
+  $contents = file_get_contents($file_path);
+  if ($contents === false) {
+    return [];
+  }
+  return json_decode($contents, true) ?: [];
 }
 
 function _venipak_fetch_pickups_request($file_path) {

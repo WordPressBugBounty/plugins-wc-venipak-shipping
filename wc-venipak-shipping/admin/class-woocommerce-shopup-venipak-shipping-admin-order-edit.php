@@ -174,11 +174,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 					</tr>
 					<?php for ($i = 0; $i < $pack_count; $i++) { ?>
 					<tr class="venipak-pack">
-						<td><input class="venipak-pack-width" style="width: 70px;" type="text" name="width[]" value="<?php echo $pack_collection[$i]['width']; ?>" /></td>
-						<td><input class="venipak-pack-height" style="width: 70px;" type="text" name="height[]" value="<?php echo $pack_collection[$i]['height']; ?>" /></td>
-						<td><input class="venipak-pack-length" style="width: 70px;" type="text" name="length[]" value="<?php echo $pack_collection[$i]['length']; ?>" /></td>
-						<td><input class="venipak-pack-weight" style="width: 70px;" type="text" name="weight[]" value="<?php echo $pack_collection[$i]['weight']; ?>" /></td>
-						<td><textarea class="venipak-pack-description" name="description[]"><?php echo $pack_collection[$i]['description']; ?></textarea></td>
+						<td><input class="venipak-pack-width" style="width: 70px;" type="text" name="width[]" value="<?php echo esc_attr($pack_collection[$i]['width']); ?>" /></td>
+						<td><input class="venipak-pack-height" style="width: 70px;" type="text" name="height[]" value="<?php echo esc_attr($pack_collection[$i]['height']); ?>" /></td>
+						<td><input class="venipak-pack-length" style="width: 70px;" type="text" name="length[]" value="<?php echo esc_attr($pack_collection[$i]['length']); ?>" /></td>
+						<td><input class="venipak-pack-weight" style="width: 70px;" type="text" name="weight[]" value="<?php echo esc_attr($pack_collection[$i]['weight']); ?>" /></td>
+						<td><textarea class="venipak-pack-description" name="description[]"><?php echo esc_textarea($pack_collection[$i]['description']); ?></textarea></td>
 						<td><button onclick="removePackage(this)" type="button"><?php echo __( 'Remove package', 'woocommerce-shopup-venipak-shipping' ); ?></button></td>
 					</tr>
 					<?php }	?>
@@ -196,7 +196,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			</div>
 			<div id="shopup_venipak_shipping_wrapper_order_<?php echo $order->get_id(); ?>" style="margin-top: 10px;">
 			<?php if ($status === 'error') { ?>
-				<p style="color: red;"><?php echo $error_message ?></p>
+				<p style="color: red;"><?php echo esc_html($error_message) ?></p>
 			<?php } ?>
 			<?php if ($status === 'sent') { ?>
 				<div>
@@ -228,7 +228,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 					text: `${value.name}, ${value.address}, ${value.city}, ${value.zip}`,
 				})),
 		    });
-	      	$('.venipak_pickup_point').val("<?php echo $venipak_pickup_point_id; ?>").trigger('change');
+	      	$('.venipak_pickup_point').val(<?php echo wp_json_encode($venipak_pickup_point_id); ?>).trigger('change');
       }, 'json');
   	});
 

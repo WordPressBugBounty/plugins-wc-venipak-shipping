@@ -130,4 +130,63 @@
 /* Hide Select2 arrow when loading */
 .select2-container--default .select2-selection--single.venipak-loading .select2-selection__arrow {
     display: none;
-} 
+}
+
+/* Inline pickup selector */
+tr.woocommerce-shipping-totals td,
+tr.woocommerce-shipping-totals {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+ul.woocommerce-shipping-methods,
+ul#shipping_method {
+    overflow: visible !important;
+}
+
+ul#shipping_method li:has(.venipak-pickup-wrapper) {
+    float: none !important;
+    width: 100% !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    margin-bottom: 10px;
+}
+
+.venipak-pickup-wrapper {
+    display: block;
+    clear: both;
+    max-width: var(--venipak-pickup-width, 275px);
+    padding: 10px 0 0;
+    margin-left: auto;
+}
+
+.venipak-pickup-wrapper .select2-container {
+    width: 100% !important;
+}
+
+.venipak-pickup-wrapper .select2-selection--single {
+    overflow: hidden !important;
+}
+
+.venipak-pickup-wrapper .select2-selection__rendered {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding-right: 30px !important;
+}
+
+.venipak-pickup-wrapper #selected-pickup-info {
+    text-align: right;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    margin-top: 10px;
+    font-size: 0.85em;
+    line-height: 1.4;
+}
+
+.venipak-pickup-wrapper #venipak-map {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    margin-top: 10px;
+}

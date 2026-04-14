@@ -75,13 +75,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      */
     private $venipak_manifest;
 
-    /**
-     *
-     *
-     * @since    1.0.0
-     */
-    private $venipak_first_pack_number;
-
     private $venipak_return_service;
 
     /**
@@ -184,7 +177,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         $this->venipak_username = $settings->get_option_by_key('shopup_venipak_shipping_field_username');
         $this->venipak_password = $settings->get_option_by_key('shopup_venipak_shipping_field_password');
         $this->venipak_manifest = $settings->get_option_by_key('shopup_venipak_shipping_field_manifest') ?: '001';
-        $this->venipak_first_pack_number = $settings->get_option_by_key('shopup_venipak_shipping_field_firstpacknumber');
         $this->venipak_return_service = intval($settings->get_option_by_key('shopup_venipak_shipping_field_return_service'));
         $this->venipak_sender_name = $settings->get_option_by_key('shopup_venipak_shipping_field_sendername');
         $this->venipak_sender_company_code = $settings->get_option_by_key('shopup_venipak_shipping_field_sendercompanycode');
@@ -220,6 +212,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      * @since    1.0.0
      */
     public function add_venipak_shipping_dispatch_force() {
+        check_ajax_referer( 'venipak_shipping_admin', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( -1, 403 );
+        }
         $order_id = intval( $_POST['order_id'] );
         $order = wc_get_order($order_id);
         $order_data = $order->get_meta('venipak_shipping_order_data', true);
@@ -237,8 +233,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      * @since    1.0.0
      */
     public function add_venipak_shipping_dispatch() {
+        check_ajax_referer( 'venipak_shipping_admin', 'nonce' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( -1, 403 );
+        }
         $order_id = intval( $_POST['order_id'] );
-        $packs = $_POST['packs'];
+        $packs = isset( $_POST['packs'] ) ? $_POST['packs'] : false;
         $is_global = array_key_exists('is_global', $_POST) ? $_POST['is_global'] : false;
         $result = $this->venipak_shipping_dispatch_order([$order_id], $packs, $is_global);
 
@@ -250,7 +250,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $content = '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;"><a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" title="' . $pack_numbers_string . '" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-tag"></span></a> <a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-media-document"></span></a></div>';
             echo $content;
         } else {
-            echo $result['data'];
+            echo esc_html($result['data']);
         }
         wp_die();
     }
@@ -307,7 +307,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
     public function getImportXML($order_ids, $packs, $is_global_force) {
         date_default_timezone_set('Europe/Vilnius');
         $client_id = $this->venipak_userid;
-        $last_pack_nr = intval($this->venipak_first_pack_number);
         $venipak_return_service =  $this->venipak_return_service;
         $document = new \DOMDocument( '1.0', 'utf-8' );
         // descriotion
@@ -508,6 +507,30 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $value = $document->createElement( 'value',  $order->get_total());
                 $global->appendChild($value);
             }
+            // Count how many pack numbers this order needs
+            $needed_packs = 0;
+            $products_with_shipments = [];
+            $products_without_shipments = [];
+
+            if ($packs) {
+                $needed_packs = sizeof($packs);
+            } else {
+                foreach ($order_products as $product) {
+                    $product_total_shipments = $product->get_meta('_venipak_total_shipments', true) ?: $product->get_meta('_omnivalt_total_shipments', true);
+                    if ($product_total_shipments) {
+                        $products_with_shipments[] = $product;
+                        $needed_packs += intval($product_total_shipments);
+                    } else {
+                        $products_without_shipments[] = $product;
+                    }
+                }
+                $needed_packs += $venipak_pickup_point ? 1 : max(1, ceil(sizeof($products_without_shipments) / $this->shopup_venipak_shipping_field_maxpackproducts));
+            }
+
+            // Atomically reserve pack numbers
+            $reserved_start = $this->settings->reserve_pack_numbers($needed_packs);
+            $current_pack_nr = $reserved_start;
+
             // Initialize pack numbers array
             $pack_numbers = [];
             $total_weight = 0;
@@ -515,8 +538,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             if ($packs) {
                 for ($i = 0; $i < sizeof($packs); $i++) {
                     $pack = $document->createElement( 'pack' );
-                    $last_pack_nr = intval($last_pack_nr) + 1;
-                    $pack_nr = $this->settings->format_pack_number($last_pack_nr);
+                    $current_pack_nr++;
+                    $pack_nr = $this->settings->format_pack_number($current_pack_nr);
                     $pack_no = $document->createElement( 'pack_no', $pack_nr );
                     $pack->appendChild($pack_no);
                     $packs[$i]['weight'] = max($packs[$i]['weight'], 0.1);
@@ -528,19 +551,16 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                         $pack->appendChild($height);
                         $length = $document->createElement('length', $packs[$i]['length']);
                         $pack->appendChild($length);
-                    } else {
-                        $volume = $document->createElement('volume', (float)$packs[$i]['length'] * (float)$packs[$i]['height'] * (float)$packs[$i]['width']);
+                    }
+
+                    if ($packs[$i]['width'] > 0 && $packs[$i]['height'] > 0 && $packs[$i]['length'] > 0) {
+                        $volume = $document->createElement('volume', (float)$packs[$i]['width'] * (float)$packs[$i]['length'] * (float)$packs[$i]['height']);
                         $pack->appendChild($volume);
                     }
 
                     if ($is_global || $packs[$i]['weight'] > 0) {
                         $weight = $document->createElement('weight', $packs[$i]['weight']);
                         $pack->appendChild($weight);
-                    }
-
-                    if ($packs[$i]['width'] > 0 && $packs[$i]['height'] > 0 && $packs[$i]['length'] > 0) {
-                        $volume = $document->createElement('volume', (float)$packs[$i]['width'] * (float)$packs[$i]['length'] * (float)$packs[$i]['height']);
-                        $pack->appendChild($volume);
                     }
 
                     if ($is_global || $packs[$i]['description'] != '') {
@@ -552,25 +572,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                     $total_weight += $packs[$i]['weight'];
                 }
             } else {
-                // Separate products with total_shipments and without
-                $products_with_shipments = [];
-                $products_without_shipments = [];
-
-                foreach ($order_products as $product) {
-                    $product_total_shipments = $product->get_meta('_venipak_total_shipments', true) ?: $product->get_meta('_omnivalt_total_shipments', true);
-                    if ($product_total_shipments) {
-                        $products_with_shipments[] = $product;
-                    } else {
-                        $products_without_shipments[] = $product;
-                    }
-                }
-
                 // Build packs for products with total_shipments
                 foreach ($products_with_shipments as $product) {
                     $product_total_shipments = $product->get_meta('_venipak_total_shipments', true) ?: $product->get_meta('_omnivalt_total_shipments', true);
                     for ($i = 0; $i < $product_total_shipments; $i++) {
-                        $last_pack_nr++;
-                        $pack_nr = $this->settings->format_pack_number($last_pack_nr);
+                        $current_pack_nr++;
+                        $pack_nr = $this->settings->format_pack_number($current_pack_nr);
                         $pack = $document->createElement('pack');
                         $pack_no = $document->createElement('pack_no', $pack_nr);
                         $pack->appendChild($pack_no);
@@ -589,8 +596,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 // Continue with existing logic for products without total_shipments
                 $pack_count = $venipak_pickup_point ? 1 : ceil(sizeof($products_without_shipments) / $this->shopup_venipak_shipping_field_maxpackproducts);
                 for ($i = 0; $i < $pack_count; $i++) {
-                    $last_pack_nr++;
-                    $pack_nr = $this->settings->format_pack_number($last_pack_nr);
+                    $current_pack_nr++;
+                    $pack_nr = $this->settings->format_pack_number($current_pack_nr);
                     $pack = $document->createElement('pack');
                     $pack_no = $document->createElement('pack_no', $pack_nr);
                     $pack->appendChild($pack_no);
@@ -630,8 +637,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $xml_not_empty = true;
 
         }
-        $this->settings->update_last_pack_number($last_pack_nr);
-        $this->venipak_first_pack_number = $last_pack_nr;
         return $xml_not_empty ? $document->saveXML() : null;
     }
 

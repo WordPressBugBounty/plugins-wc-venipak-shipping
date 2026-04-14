@@ -118,6 +118,9 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin {
 		 */
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woocommerce-shopup-venipak-shipping-admin.js', array( 'jquery' ), $this->version, false );
+		wp_localize_script( $this->plugin_name, 'venipakAdmin', array(
+			'nonce' => wp_create_nonce( 'venipak_shipping_admin' ),
+		));
 	}
 
 }

@@ -70,6 +70,13 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	private $is_clusters_enabled;
 
 	/**
+	 *
+	 *
+	 * @since    1.25.10
+	 */
+	private $pickup_position;
+
+	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
@@ -83,6 +90,16 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 		$this->is_map_enabled = $settings->get_option_by_key('shopup_venipak_shipping_field_ismapenabled');
 		$this->pickup_type = $settings->get_option_by_key('shopup_venipak_shipping_field_pickuptype');
 		$this->is_clusters_enabled = $settings->get_option_by_key('shopup_venipak_shipping_field_isclustersenabled');
+		$this->pickup_position = $settings->get_option_by_key('shopup_venipak_shipping_field_pickupposition') ?: 'after_shipping';
+	}
+
+	/**
+	 * Get the pickup position setting.
+	 *
+	 * @since    1.25.10
+	 */
+	public function get_pickup_position() {
+		return $this->pickup_position;
 	}
 
 	/**
@@ -91,7 +108,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_pickup_options() {
-		
+
 		if (in_array('shopup_venipak_shipping_pickup_method', wc_get_chosen_shipping_method_ids())) {
 			wc_get_template(
 				'woocommerce/checkout/venipak-shipping-terminals.php',
@@ -99,6 +116,27 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 				'',
 				untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/' );
 		}
+	}
+
+	/**
+	 * Render pickup selector inline after the pickup shipping method.
+	 *
+	 * @since    1.25.10
+	 */
+	public function add_venipak_shipping_pickup_options_inline( $method, $index ) {
+		if ( ! is_checkout() ) return;
+
+		$chosen_method_id = WC()->session->chosen_shipping_methods[ $index ];
+
+		if ( $chosen_method_id !== $method->id || $method->method_id !== 'shopup_venipak_shipping_pickup_method' ) {
+			return;
+		}
+
+		wc_get_template(
+			'woocommerce/checkout/venipak-shipping-terminals-inline.php',
+			array(),
+			'',
+			untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/' );
 	}
 
 	/**
