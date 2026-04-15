@@ -36,41 +36,19 @@
 }
 
 .wc-venipak-shipping-terminals {
-  text-align: right;
-}
-
-.woocommerce-checkout table.shop_table {
-    table-layout: fixed !important;
-    width: 100% !important;
-}
- 
-.woocommerce-checkout table.shop_table tfoot {
-    width: 100% !important;
-    display: table-footer-group;
-}
-
-.woocommerce-checkout table.shop_table tfoot tr {
-    display: table-row;
-    width: 100% !important;
-}
- 
-.wc-venipak-shipping-terminals {
-    display: table-row;
-    width: 100% !important;
+    text-align: right;
 }
 
 .wc-venipak-shipping-terminals td {
-    display: table-cell;
-    width: 100% !important;
     box-sizing: border-box;
 }
- 
- tfoot select,
- tfoot #venipak_pickup_point,
- tfoot #selected-pickup-info,
- tfoot #venipak-map {
-    width: 100% !important;
-    max-width: 100% !important;
+
+.wc-venipak-shipping-terminals select,
+.wc-venipak-shipping-terminals #venipak_pickup_point,
+.wc-venipak-shipping-terminals #selected-pickup-info,
+.wc-venipak-shipping-terminals #venipak-map {
+    width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
 }
 
@@ -132,23 +110,12 @@
     display: none;
 }
 
-/* Inline pickup selector */
-tr.woocommerce-shipping-totals td,
-tr.woocommerce-shipping-totals {
-    height: auto !important;
-    overflow: visible !important;
-}
-
-ul.woocommerce-shipping-methods,
-ul#shipping_method {
-    overflow: visible !important;
-}
-
+/* Inline pickup selector - only affect elements containing Venipak wrapper */
 ul#shipping_method li:has(.venipak-pickup-wrapper) {
-    float: none !important;
-    width: 100% !important;
-    min-height: auto !important;
-    overflow: visible !important;
+    float: none;
+    width: 100%;
+    min-height: auto;
+    overflow: visible;
     margin-bottom: 10px;
 }
 

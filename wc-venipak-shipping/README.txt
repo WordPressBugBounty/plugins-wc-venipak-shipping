@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.9.4
-Stable tag: 1.26.0
+Stable tag: 1.26.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,17 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.1 =
+* Fix: Pack number counter not incrementing between dispatches (cache invalidation)
+* Fix: Automatically retry dispatch with incremented pack number on "already in use" errors (+1, +5, +10)
+* Fix: Bundle markerclusterer locally instead of loading from unpkg CDN (resolves timeout issues)
+* Fix: Only load markerclusterer script when Google Maps is enabled in settings
+* Fix: Remove global CSS styles that broke third-party theme layouts on checkout
+* Fix: Scope all checkout styles to Venipak-specific selectors
+* Performance: Lazy-load shipping class options only when admin settings form is rendered
+* Performance: Remove unnecessary SQL queries from cart and checkout pages
+* Performance: Use prepared statements for shipping class database queries
 
 = 1.26.0 =
 * Security: Nonce verification and capability checks on admin AJAX handlers

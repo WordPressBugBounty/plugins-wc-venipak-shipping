@@ -117,7 +117,13 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 			$count
 		) );
 
-		$new_value = $this->get_pack_number();
+		// Invalidate option cache so get_option returns fresh value
+		wp_cache_delete( 'venipak_pack_number', 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
+
+		// Read directly from DB to bypass any remaining cache layer
+		$new_value = intval( $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'venipak_pack_number'" ) );
+
 		// The starting number is new_value - count (the value before increment).
 		$start = $new_value - $count;
 

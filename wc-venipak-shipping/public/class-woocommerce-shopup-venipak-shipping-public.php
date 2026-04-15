@@ -126,10 +126,15 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 		// Load scripts only on cart and checkout pages
 		if ( is_cart() || is_checkout() ) {
 			wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woocommerce-shopup-venipak-shipping-public.js', array( 'jquery' ), $this->version );
-			wp_enqueue_script( 'google_cluster_js', 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js', array(), '1', true );
-			wp_enqueue_script( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array(), '1', true );
-			wp_enqueue_style( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css', array(), '1', true );
+			wp_enqueue_script( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array(), '4.1.0', true );
+			wp_enqueue_style( 'shopup_select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css', array(), '4.1.0' );
 			wp_add_inline_script( $this->plugin_name, "window.adminUrl = '" . admin_url(). "';" );
+
+			// Load markerclusterer locally instead of from unpkg CDN
+			$is_map_enabled = $this->settings ? $this->settings->get_option_by_key('shopup_venipak_shipping_field_ismapenabled') : false;
+			if ( $is_map_enabled ) {
+				wp_enqueue_script( 'google_cluster_js', plugin_dir_url( __FILE__ ) . 'js/markerclusterer.min.js', array(), $this->version, true );
+			}
 
 			wp_enqueue_script(
 				'wc-venipak-pickup-block',
@@ -162,7 +167,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Public {
 			$order = wc_get_order( $atts['order_id'] );
 		}
 
-		$order = wc_get_order( $atts['order_id'] );
 		if ( ! $order ) {
 			return ''; // No valid order found
 		}

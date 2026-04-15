@@ -262,18 +262,42 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      */
     public function venipak_shipping_dispatch_order($order_ids, $packs, $is_global) {
         $url = 'https://go.venipak.lt/import/send.php';
-        $xml = $this->getImportXML($order_ids, $packs, $is_global);
-        if (!$xml) return null;
-        $body = array('user' => $this->venipak_username, 'pass' => $this->venipak_password, 'xml_text' => $xml);
-        $args = array(
-            'body' => $body,
-            'timeout'     => 45,
-            'headers' => array(
-                'Referer' => 'https://woocommerce.com/',
-            ),
-        );
-        $response = wp_remote_post( $url, $args );
-        $result_xml_string = wp_remote_retrieve_body( $response );
+
+        // Retry offsets: 0 (first try), then +1, +5, +10 if pack numbers collide
+        $retry_offsets = array( 0, 1, 5, 10 );
+        $result_xml_string = '';
+
+        foreach ( $retry_offsets as $offset ) {
+            if ( $offset > 0 ) {
+                // Bump the pack number counter before retrying
+                $this->settings->reserve_pack_numbers( $offset );
+            }
+
+            $xml = $this->getImportXML( $order_ids, $packs, $is_global );
+            if ( ! $xml ) return null;
+
+            $body = array( 'user' => $this->venipak_username, 'pass' => $this->venipak_password, 'xml_text' => $xml );
+            $args = array(
+                'body'    => $body,
+                'timeout' => 45,
+                'headers' => array(
+                    'Referer' => 'https://woocommerce.com/',
+                ),
+            );
+            $response = wp_remote_post( $url, $args );
+            $result_xml_string = wp_remote_retrieve_body( $response );
+
+            // Success — break out of retry loop
+            if ( strpos( $result_xml_string, 'type="ok"' ) !== false || $result_xml_string === '' ) {
+                break;
+            }
+
+            // Only retry if the error is about pack number being in use
+            if ( stripos( $result_xml_string, 'is already in use' ) === false ) {
+                break;
+            }
+        }
+
         if (strpos($result_xml_string, 'type="ok"') !== false || $result_xml_string === '') {
             foreach ($order_ids as $order_id) {
                 $order = wc_get_order( $order_id );

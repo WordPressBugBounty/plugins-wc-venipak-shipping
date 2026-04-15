@@ -70,30 +70,16 @@ class WC_Shopup_Venipak_Shipping_Courier_Method extends WC_Shipping_Method {
           'description' => __('Users will need to spend this amount to get free shipping (if enabled above).', 'woocommerce-shopup-venipak-shipping'),
           'desc_tip'    => true
       ],
+      'ignore_shipping_classes' => [
+          'title'       => __('Disable this method for these shipping classes', 'woocommerce-shopup-venipak-shipping'),
+          'type'        => 'ignore_shipping_classes',
+          'default'     => null,
+          'description' => __('If at least one has product has selected shipping classes it will disable this shipping method',
+              'woocommerce-shopup-venipak-shipping'),
+          'desc_tip'    => true,
+          'options'     => [],
+      ],
     ];
-
-    $shipping_classes = $this->get_shipping_classes();
-
-    if ( ! empty($shipping_classes)) {
-      $prepared_shipping_classes = [];
-
-      foreach ($shipping_classes as $shipping_class) {
-        $prepared_shipping_classes[$shipping_class->term_id] = $shipping_class->name;
-      }
-
-      $this->instance_form_fields = array_merge($this->instance_form_fields, [
-          'ignore_shipping_classes' => [
-            'title'       => __('Disable this method for these shipping classes', 'woocommerce-shopup-venipak-shipping'),
-            'type'        => 'multiselect',
-            'default'     => null,
-            'description' => __('If at least one has product has selected shipping classes it will disable this shipping method',
-                'woocommerce-shopup-venipak-shipping'),
-            'desc_tip'    => true,
-            'options'     => $prepared_shipping_classes
-          ],
-        ]
-      );
-    }
 
 
     // Load the settings API
@@ -136,15 +122,8 @@ class WC_Shopup_Venipak_Shipping_Courier_Method extends WC_Shipping_Method {
         'tax_class' => $shipping_tax_class,
     ];
 
-    $shipping_classes = $this->get_shipping_classes();
-
-    if ( ! empty($shipping_classes)) {
-      $ignored_classes = $this->get_option('ignore_shipping_classes', []);
-
-      if ( ! is_array($ignored_classes)) {
-        $ignored_classes = [];
-      }
-
+    $ignored_classes = $this->get_option('ignore_shipping_classes', []);
+    if ( is_array( $ignored_classes ) && ! empty( $ignored_classes ) ) {
       $found_shipping_classes = $this->find_shipping_classes_for_package($package);
 
       foreach ($found_shipping_classes as $found_class) {
@@ -203,13 +182,37 @@ class WC_Shopup_Venipak_Shipping_Courier_Method extends WC_Shipping_Method {
    *
    * @since    1.0.0
    */
+  /**
+   * Render the ignore_shipping_classes field only when admin settings form is displayed.
+   */
+  public function generate_ignore_shipping_classes_html( $key, $data ) {
+    $shipping_classes = $this->get_shipping_classes();
+    if ( ! empty( $shipping_classes ) ) {
+      $prepared_shipping_classes = [];
+      foreach ( $shipping_classes as $shipping_class ) {
+        $prepared_shipping_classes[ $shipping_class->term_id ] = $shipping_class->name;
+      }
+      $data['options'] = $prepared_shipping_classes;
+      return $this->generate_multiselect_html( $key, $data );
+    }
+    return '';
+  }
+
+  /**
+   * Validate the ignore_shipping_classes field as a multiselect.
+   */
+  public function validate_ignore_shipping_classes_field( $key, $value ) {
+    return $this->validate_multiselect_field( $key, $value );
+  }
+
   public function get_shipping_classes() {
     global $wpdb;
-    return $wpdb->get_results( "
-        SELECT * FROM {$wpdb->prefix}terms as t
-        INNER JOIN {$wpdb->prefix}term_taxonomy as tt ON t.term_id = tt.term_id
-        WHERE tt.taxonomy LIKE 'product_shipping_class'
-    " );
+    return $wpdb->get_results( $wpdb->prepare(
+      "SELECT * FROM {$wpdb->prefix}terms as t
+       INNER JOIN {$wpdb->prefix}term_taxonomy as tt ON t.term_id = tt.term_id
+       WHERE tt.taxonomy = %s",
+      'product_shipping_class'
+    ) );
   }
 
   /**
