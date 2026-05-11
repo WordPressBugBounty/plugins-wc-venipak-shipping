@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.9.4
-Stable tag: 1.26.1
+Stable tag: 1.26.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.2 =
+* Fix: Pickup shipping method instance weight range (minimum/maximum) now applies to pickup points, not only lockers
+* Fix: Weight range boundaries no longer overlap between instances (each bucket covers `(min, max]`)
 
 = 1.26.1 =
 * Fix: Pack number counter not incrementing between dispatches (cache invalidation)

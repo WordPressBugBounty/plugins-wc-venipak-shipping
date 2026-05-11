@@ -153,7 +153,8 @@ class WC_Shopup_Venipak_Shipping_Pickup_Method extends WC_Shipping_Method {
 
     $maximum_weight_locker = $this->get_option('maximum_weight') ? $this->get_option('maximum_weight') : 30;
     $manimum_weight_locker = $this->get_option('minimum_weight') ? $this->get_option('minimum_weight') : 0;
-		$maximum_weight_pickup = 10;
+		$maximum_weight_pickup = min($maximum_weight_locker, 10);
+		$minimum_weight_pickup = $manimum_weight_locker;
 
     // Locker internal max dimensions (cm by default)
     $venipak_box_dims = [
@@ -204,10 +205,10 @@ class WC_Shopup_Venipak_Shipping_Pickup_Method extends WC_Shipping_Method {
       $is_valid_for_locker = false;
       $is_valid_for_pickup = false;
     }
-    if ($cart_total_weight > $maximum_weight_locker || $cart_total_weight < $manimum_weight_locker) {
+    if ($cart_total_weight > $maximum_weight_locker || ($manimum_weight_locker > 0 && $cart_total_weight <= $manimum_weight_locker)) {
       $is_valid_for_locker = false;
     }
-    if ($cart_total_weight > $maximum_weight_pickup) {
+    if ($cart_total_weight > $maximum_weight_pickup || ($minimum_weight_pickup > 0 && $cart_total_weight <= $minimum_weight_pickup)) {
       $is_valid_for_pickup = false;
     }
     if ($total_cart_volume > $venipak_max_volume) {
