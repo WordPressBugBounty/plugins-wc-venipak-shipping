@@ -385,7 +385,12 @@
 
   function initPickupSelect(collection) {
     const map = window.venipakShipping.map;
-    $('.venipak_pickup_point').select2({
+    const $select = $('.venipak_pickup_point');
+    // Placeholder shown while no pickup point is selected. The empty <option>
+    // can be blanked during loading, so we rely on Select2's placeholder option
+    // (translated string comes from the template's data-placeholder attribute).
+    const placeholderText = $select.data('placeholder') || $select.find('option[value=""]').text() || '';
+    $select.select2({
       data: collection.map(value => ({
         id: value.id,
         text: `${value.display_name}|${value.address}|${value.city}|${value.zip}`,
@@ -393,6 +398,7 @@
       // matcher: matchCustom,
       templateResult,
       templateSelection,
+      placeholder: placeholderText,
       width: '100%',
     });
     const lspp = localStorage.getItem('lspp');

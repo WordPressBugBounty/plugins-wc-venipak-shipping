@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.9.4
-Stable tag: 1.26.2
+Stable tag: 1.26.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,10 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.3 =
+* Fix: Pickup point selector now clearly visible at checkout (white background + Venipak brand-coloured border)
+* Improvement: Show a translated placeholder ("Select pickup point") while no pickup point is selected
 
 = 1.26.2 =
 * Fix: Pickup shipping method instance weight range (minimum/maximum) now applies to pickup points, not only lockers

@@ -157,3 +157,14 @@ ul#shipping_method li:has(.venipak-pickup-wrapper) {
     box-sizing: border-box;
     margin-top: 10px;
 }
+
+/* Make the pickup selector clearly visible against the checkout background:
+   white background + Venipak brand-coloured border. Covers both the native
+   <select> (shown before Select2 initialises / as a fallback) and the Select2
+   single-selection box. The .select2-container--default part raises specificity
+   so this wins over Select2's default border. */
+.venipak-pickup-wrapper select.venipak_pickup_point,
+.venipak-pickup-wrapper .select2-container--default .select2-selection--single {
+    background-color: #fff;
+    border: 1px solid #9339f2;
+}

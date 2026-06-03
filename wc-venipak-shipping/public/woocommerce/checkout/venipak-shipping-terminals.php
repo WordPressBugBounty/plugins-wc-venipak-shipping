@@ -9,7 +9,7 @@
         <div class="venipak-pickup-wrapper">
             <div>
                 <label for="venipak_pickup_point" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e( 'Select Venipak pickup point:', 'woocommerce-shopup-venipak-shipping' ); ?></label>
-                <select name="venipak_pickup_point" id="venipak_pickup_point" class="venipak_pickup_point">
+                <select name="venipak_pickup_point" id="venipak_pickup_point" class="venipak_pickup_point" data-placeholder="<?php echo esc_attr__( 'Select pickup point', 'woocommerce-shopup-venipak-shipping' ); ?>">
                     <option value=""><?php _e( 'Select pickup point', 'woocommerce-shopup-venipak-shipping' ); ?></option>
                 </select>
             </div>
