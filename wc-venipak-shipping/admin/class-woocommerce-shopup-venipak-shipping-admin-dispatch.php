@@ -340,6 +340,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         // Retry offsets: 0 (first try), then +1, +5, +10 if pack numbers collide
         $retry_offsets = array( 0, 1, 5, 10 );
         $result_xml_string = '';
+        $transport_error = '';
 
         foreach ( $retry_offsets as $offset ) {
             if ( $offset > 0 ) {
@@ -359,10 +360,36 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 ),
             );
             $response = wp_remote_post( $url, $args );
+
+            // An empty body means the request never reached Venipak — a broken resolver or a
+            // timeout, not an accepted shipment. Treating it as success is how a bulk dispatch
+            // once flipped 170 orders to "sent" with nothing registered and no labels.
+            if ( is_wp_error( $response ) ) {
+                $transport_error = $response->get_error_message();
+                $result_xml_string = '';
+                break;
+            }
+
+            $transport_error = '';
+            $status_code = wp_remote_retrieve_response_code( $response );
             $result_xml_string = wp_remote_retrieve_body( $response );
 
+            if ( $status_code !== 200 ) {
+                $transport_error = sprintf(
+                    /* translators: %d: HTTP status code returned by Venipak */
+                    __( 'Venipak answered with HTTP %d', 'woocommerce-shopup-venipak-shipping' ),
+                    $status_code
+                );
+                break;
+            }
+
+            if ( $result_xml_string === '' ) {
+                $transport_error = __( 'Venipak returned an empty response — the shipment was NOT registered.', 'woocommerce-shopup-venipak-shipping' );
+                break;
+            }
+
             // Success — break out of retry loop
-            if ( strpos( $result_xml_string, 'type="ok"' ) !== false || $result_xml_string === '' ) {
+            if ( strpos( $result_xml_string, 'type="ok"' ) !== false ) {
                 break;
             }
 
@@ -372,7 +399,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             }
         }
 
-        if (strpos($result_xml_string, 'type="ok"') !== false || $result_xml_string === '') {
+        if ( ! $transport_error && strpos( $result_xml_string, 'type="ok"' ) !== false ) {
             foreach ($order_ids as $order_id) {
                 $order = wc_get_order( $order_id );
                 if (!$this->venipak_is_status_change_disabled)  {
@@ -390,9 +417,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $order = wc_get_order( $order_ids[0] );
             $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
             $venipak_shipping_order_data['status'] = 'error';
-            $venipak_shipping_order_data['error_message'] = strip_tags($result_xml_string);
+            $venipak_shipping_order_data['error_message'] = $transport_error ? $transport_error : strip_tags($result_xml_string);
             $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
             $order->save();
+            if ( $transport_error ) {
+                error_log( 'VENIPAK ' . $url . ' dispatch failed: ' . $transport_error );
+            }
             return array('status' => 'error', 'data' => $venipak_shipping_order_data['error_message']);
         }
     }

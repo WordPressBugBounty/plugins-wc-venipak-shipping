@@ -15,13 +15,16 @@
  * @wordpress-plugin
  * Plugin Name:       Shipping with Venipak for WooCommerce
  * Description:       Venipak delivery method plugin for WooCommerce. Delivery via courier and pickup points.
- * Version:           1.26.4
+ * Version:           1.26.5
  * Author:            ShopUp
  * Author URI:        https://shopup.lt/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       woocommerce-shopup-venipak-shipping
  * Domain Path:       /languages/
+ * Requires at least: 6.5
+ * Requires PHP:      7.4
+ * Requires Plugins:  woocommerce
  */
 
 // If this file is called directly, abort.
@@ -38,7 +41,21 @@ $plugin_description = 'Venipak delivery method plugin for WooCommerce. Delivery 
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'WOOCOMMERCE_SHOPUP_VENIPAK_SHIPPING_VERSION', '1.26.4' );
+define( 'WOOCOMMERCE_SHOPUP_VENIPAK_SHIPPING_VERSION', '1.26.5' );
+
+/**
+ * Tell WooCommerce the plugin is safe with High-Performance Order Storage and with the
+ * Cart/Checkout blocks. Both are true: every order read and write goes through wc_get_order()
+ * and the CRUD meta API — the plugin never touches post meta or WP_Query — and the block
+ * checkout has had a Store API integration since 1.23.0. Without these declarations
+ * WooCommerce lists the plugin as incompatible with both, which is simply wrong.
+ */
+add_action( 'before_woocommerce_init', function () {
+	if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, true );
+	}
+} );
 
 /**
  * The code that runs during plugin activation.

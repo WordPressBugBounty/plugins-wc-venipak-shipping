@@ -502,3 +502,11 @@ msgstr ""
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:274
 msgid "Venipak"
 msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:380
+msgid "Venipak answered with HTTP %d"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:387
+msgid "Venipak returned an empty response — the shipment was NOT registered."
+msgstr ""

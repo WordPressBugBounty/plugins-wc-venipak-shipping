@@ -1,9 +1,10 @@
 === Shipping with Venipak for WooCommerce ===
 Contributors: shopup
 Tags: Venipak
-Requires at least: 4.4
-Tested up to: 6.9.4
-Stable tag: 1.26.4
+Requires at least: 6.5
+Requires PHP: 7.4
+Tested up to: 7.0.3
+Stable tag: 1.26.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +29,12 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.5 =
+* Fix: A dispatch that never reached Venipak was treated as success. An empty or failed response marked the orders "completed" and "sent" while nothing was registered and no labels existed. The dispatch now requires a real confirmation from Venipak and reports the transport error otherwise
+* Fix: Declare compatibility with High-Performance Order Storage and with the Cart/Checkout blocks. WooCommerce was listing the plugin as incompatible with both, which was never true
+* Tweak: Declare the actual requirements (WordPress 6.5, PHP 7.4, WooCommerce) instead of the long-stale "WordPress 4.4"
+* Tested with WordPress 7.0.3
 
 = 1.26.4 =
 * Fix: Bulk label printing opened a blank window instead of the PDF. The request had no timeout, so larger batches were cut off after 5 seconds and the empty result was sent to the browser as a PDF
