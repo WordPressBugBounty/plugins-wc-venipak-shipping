@@ -462,3 +462,43 @@ msgstr ""
 #: public/js/pickups-block/pickups-block.js:91
 msgid "Cod incompatible"
 msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:264
+msgid "The selected pickup point is no longer available. Choose another one on the order before dispatching."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:271
+msgid "no longer available"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:108
+msgid "None of the selected orders has been dispatched to Venipak yet, so there are no labels to print."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:139
+msgid "This order has not been dispatched to Venipak yet, so it has no label."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:174
+msgid "This order has not been dispatched to Venipak yet, so it has no manifest."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:229
+msgid "Venipak did not answer: %s"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:244
+msgid "Venipak returned no printable PDF: %s"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:245
+msgid "empty response"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:250
+msgid "Another plugin has already sent output, so the PDF cannot be delivered."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-label.php:274
+msgid "Venipak"
+msgstr ""

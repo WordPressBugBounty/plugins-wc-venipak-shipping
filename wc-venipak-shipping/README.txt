@@ -3,7 +3,7 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 4.4
 Tested up to: 6.9.4
-Stable tag: 1.26.3
+Stable tag: 1.26.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,15 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.4 =
+* Fix: Bulk label printing opened a blank window instead of the PDF. The request had no timeout, so larger batches were cut off after 5 seconds and the empty result was sent to the browser as a PDF
+* Fix: Labels and manifests now show why no PDF is coming instead of an empty viewer window
+* Fix: Orders for a pickup point that Venipak has removed were silently dispatched to the customer's home address by courier. The dispatch now stops with a clear message asking for another pickup point
+* Fix: The chosen pickup point is stored with the order, so its name and address remain visible on the order screen and in customer emails even after Venipak removes the point from its list
+* Fix: Label format was sent empty by shops that never saved the plugin settings page
+* Fix: Customer emails no longer contain an empty tracking link for orders that have not been dispatched
+* Performance: The pickup point list is read and decoded once per request instead of on every lookup
 
 = 1.26.3 =
 * Fix: Pickup point selector now clearly visible at checkout (white background + Venipak brand-coloured border)

@@ -258,10 +258,84 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
     /**
      *
      *
+     * @since    1.26.4
+     */
+    private function missing_pickup_point_message() {
+        return __( 'The selected pickup point is no longer available. Choose another one on the order before dispatching.', 'woocommerce-shopup-venipak-shipping' );
+    }
+
+    /**
+     * Keep orders whose pickup point cannot be resolved out of the dispatch entirely.
+     *
+     * The XML builder treats "no pickup point" as "courier", so an order for a point that
+     * has left Venipak's feed would otherwise be accepted and delivered to the buyer's home
+     * address instead of the locker, with no error anywhere.
+     *
+     * @since    1.26.4
+     */
+    private function reject_orders_with_missing_pickup_point( $order_ids ) {
+        $dispatchable = array();
+
+        foreach ( $order_ids as $order_id ) {
+            $order = wc_get_order( $order_id );
+            if ( ! $order ) continue;
+
+            $shipping_method = @array_shift( $order->get_shipping_methods() );
+            $shipping_method_id = $shipping_method ? $shipping_method['method_id'] : '';
+
+            $venipak_shipping_order_data = json_decode( $order->get_meta( 'venipak_shipping_order_data' ), true );
+            if ( ! $venipak_shipping_order_data ) {
+                $venipak_shipping_order_data = array();
+            }
+
+            // Already dispatched: the XML builder skips it anyway, and its pickup point
+            // having since vanished is no reason to mark a shipped order as failed.
+            if ( isset( $venipak_shipping_order_data['status'] ) && $venipak_shipping_order_data['status'] === 'sent' ) {
+                $dispatchable[] = $order_id;
+                continue;
+            }
+
+            if ( $shipping_method_id === 'shopup_venipak_shipping_pickup_method' && ! venipak_resolve_order_pickup( $order ) ) {
+                // Every other writer of this meta goes through getImportXML(), which fills these
+                // keys in. Readers therefore only test the decoded array for truthiness before
+                // dereferencing, so refusing here without them would hand them a partial array —
+                // a blank product count in the metabox and, on the customer's side, a tracking
+                // link built from a pack number that does not exist.
+                $products_count = 0;
+                foreach ( $order->get_items() as $product_item ) {
+                    $products_count += $product_item->get_quantity();
+                }
+                $venipak_shipping_order_data = array_merge( array(
+                    'pack_numbers' => array(),
+                    'manifest' => '',
+                    'products_count' => $products_count,
+                ), $venipak_shipping_order_data );
+
+                $venipak_shipping_order_data['status'] = 'error';
+                $venipak_shipping_order_data['error_message'] = $this->missing_pickup_point_message();
+                $order->update_meta_data( 'venipak_shipping_order_data', json_encode( $venipak_shipping_order_data ) );
+                $order->save();
+                continue;
+            }
+
+            $dispatchable[] = $order_id;
+        }
+
+        return $dispatchable;
+    }
+
+    /**
+     *
+     *
      * @since    1.0.0
      */
     public function venipak_shipping_dispatch_order($order_ids, $packs, $is_global) {
         $url = 'https://go.venipak.lt/import/send.php';
+
+        $order_ids = $this->reject_orders_with_missing_pickup_point( $order_ids );
+        if ( ! $order_ids ) {
+            return array( 'status' => 'error', 'data' => $this->missing_pickup_point_message() );
+        }
 
         // Retry offsets: 0 (first try), then +1, +5, +10 if pack numbers collide
         $retry_offsets = array( 0, 1, 5, 10 );
@@ -347,9 +421,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         $manifest->appendChild($manifest_attr);
         $description->appendChild($manifest);
         $xml_not_empty = false;
-        $pickup_collection = venipak_fetch_pickups();
-
-
 
         foreach ($order_ids as $order_id) {
             $order = wc_get_order($order_id);
@@ -359,7 +430,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
 
             $payment_method = $order->get_payment_method();
             $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
-            $venipak_pickup_point = false;
 
             if (!$venipak_shipping_order_data) {
                 $venipak_shipping_order_data = [];
@@ -367,15 +437,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 if ($venipak_shipping_order_data['status'] === 'sent') { continue; };
             }
 
-            $pickup_point_data = $order->get_meta('venipak_pickup_point');
-            if (is_numeric($pickup_point_data)) {
-                foreach ($pickup_collection as $key => $value) {
-                    if ($value['id'] == $pickup_point_data) {
-                        $venipak_pickup_point = $value;
-                        break;
-                    }
-                }
-            }
+            $venipak_pickup_point = venipak_resolve_order_pickup($order);
 
             $order_products = [];
             $min_age = 0;

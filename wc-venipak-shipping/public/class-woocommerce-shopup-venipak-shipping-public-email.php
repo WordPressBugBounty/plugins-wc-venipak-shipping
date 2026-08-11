@@ -88,7 +88,9 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Email {
     		echo '<p>' . __( 'Your tracking order code number:', 'woocommerce-shopup-venipak-shipping' ) . ' ' . $gls_tracking_number . '</p>';
 		} else {
 			$venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
-      if ($venipak_shipping_order_data) {
+      // An order can carry this meta without ever having been dispatched — a failed dispatch
+      // writes it too. Testing the array alone would email a tracking link with no code in it.
+      if ($venipak_shipping_order_data && !empty($venipak_shipping_order_data['pack_numbers'][0])) {
         $pack_numbers = $venipak_shipping_order_data['pack_numbers'];
         echo '<p>' . __( 'Your tracking order code ', 'woocommerce-shopup-venipak-shipping' ) . ' <a href="https://venipak.' . $domain . '/tracking/track/' . $pack_numbers[0] . '/">' . $pack_numbers[0] . '</p>';
       } else {
@@ -107,25 +109,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Email {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_selected_pickup_info( $order, $sent_to_admin, $plain_text, $email ) {
-		$venipak_pickup_point = $order->get_meta('venipak_pickup_point');
-		$venipak_pickup = false;
-		if (is_numeric($venipak_pickup_point)) {
-      $response = wp_remote_get( "https://go.venipak.lt/ws/get_pickup_points?country=" . $order->get_shipping_country() );
-      $response_body = wp_remote_retrieve_body( $response );
-      $collection = json_decode($response_body, true);
-      $pickup_options[] = '';
-      foreach ($collection as $key => $value) {
-        if ($value['id'] == $venipak_pickup_point) {
-          $venipak_pickup = $value;
-          break;
-        }
-      }
-    } elseif (is_string($venipak_pickup_point)) {
-      $venipak_pickup = json_decode($venipak_pickup_point, true);
-    }
+		$venipak_pickup = venipak_resolve_order_pickup( $order );
+
 		if ($venipak_pickup) {
+			$name = !empty($venipak_pickup['display_name']) ? $venipak_pickup['display_name'] : $venipak_pickup['name'];
 			echo '<h2>' . __( 'Your selected pickup location', 'woocommerce-shopup-venipak-shipping' ) . ':</h2>';
-			echo '<p><b>' . $venipak_pickup['display_name'] . '</b>, ' . $venipak_pickup['address'] . ', ' . $venipak_pickup['city'] . '</p>';
+			echo '<p><b>' . $name . '</b>, ' . $venipak_pickup['address'] . ', ' . $venipak_pickup['city'] . '</p>';
 		}
 	}
 }

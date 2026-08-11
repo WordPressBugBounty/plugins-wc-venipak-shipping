@@ -107,7 +107,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		if (!$this->shopup_venipak_shipping_field_forcedispatch && $shipping_method_id !== 'shopup_venipak_shipping_courier_method' && $shipping_method_id !== 'shopup_venipak_shipping_pickup_method') return;
 
 		$venipak_pickup_point_id = $order->get_meta('venipak_pickup_point', true );
-		$venipak_pickup_point_title = $this->get_venipak_point_title_by_id($venipak_pickup_point_id);
+		$venipak_pickup_point_title = $this->get_venipak_point_title($order);
 		$status = $this->get_venipak_status($order);
 		$status_title = $this->get_venipak_status_title($status);
 		$tracking_code = $this->get_venipak_tracking_code($order);
@@ -251,30 +251,26 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	public function add_venipak_shipping_order_save( $order_id ) {
 		$order = wc_get_order($order_id);
 		if ( isset( $_POST['venipak_pickup_point'] )) {
-			$order->update_meta_data('venipak_pickup_point', wc_clean( $_POST[ 'venipak_pickup_point' ] ) );
+			venipak_store_order_pickup( $order, wc_clean( $_POST[ 'venipak_pickup_point' ] ) );
 		} else {
-			$order->delete_meta_data('venipak_pickup_point');
+			venipak_clear_order_pickup( $order );
 		}
 		$order->save();
 	}
 
-	public function get_venipak_point_title_by_id($point_id) {
-		if (!$point_id) {
-			return null;
-		}
-		$collection = venipak_fetch_pickups();
-		$venipak_pickup_entity = null;
-		
-		foreach ($collection as $key => $value) {
-			if ($value['id'] == $point_id) {
-				$venipak_pickup_entity = $value;
-				break;
-			}
-		}
+	public function get_venipak_point_title($order) {
+		$venipak_pickup_entity = venipak_resolve_order_pickup($order, $source);
 		if (!$venipak_pickup_entity) {
 			return null;
 		}
-		return $venipak_pickup_entity['name'] . ' ' . $venipak_pickup_entity['address'] . ' ' . $venipak_pickup_entity['city'];
+
+		$title = $venipak_pickup_entity['name'] . ' ' . $venipak_pickup_entity['address'] . ' ' . $venipak_pickup_entity['city'];
+		if ($source !== 'live') {
+			// Answered from the order's own snapshot: Venipak no longer lists this point, so
+			// say so here rather than let it read as an ordinary, still-valid choice.
+			$title .= ' (' . __( 'no longer available', 'woocommerce-shopup-venipak-shipping' ) . ')';
+		}
+		return $title;
 	}
 
 	public function get_venipak_status($order) {
@@ -413,8 +409,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	
 	public function get_order_pack_no($order)
 	{
-		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true); 
-		if ($order_data) { 
+		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
+		// Called on every render of the order screen, including orders that carry this meta
+		// without any pack numbers — a failed dispatch, or one cleared for re-dispatch.
+		if ($order_data && !empty($order_data['pack_numbers'][0])) {
 			return $order_data['pack_numbers'][0];
 		}
 		return null;
