@@ -256,6 +256,26 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
     }
 
     /**
+     * A dispatch that never got Venipak's answer recorded. The pack numbers are saved before the
+     * request goes out, the status only after the reply is handled, so a request cut off in
+     * between (PHP time limit, a fatal in another plugin) leaves pack numbers with no status.
+     * Venipak may well have registered the shipment, so the label is offered for these orders:
+     * the label endpoint reports it if Venipak has no such parcel, and confirms the order if it has.
+     *
+     * Before 1.14.0 (which renamed product_count to products_count) some rejected dispatches were
+     * stored without a status too; those are old failures, not interrupted ones.
+     *
+     * @since    1.26.6
+     */
+    public static function is_unconfirmed( $order_data ) {
+        if ( ! is_array( $order_data ) || empty( $order_data['pack_numbers'] ) || ! isset( $order_data['products_count'] ) ) {
+            return false;
+        }
+        $status = isset( $order_data['status'] ) ? $order_data['status'] : '';
+        return $status !== 'sent' && $status !== 'error';
+    }
+
+    /**
      *
      *
      * @since    1.26.4
@@ -397,34 +417,46 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             if ( stripos( $result_xml_string, 'is already in use' ) === false ) {
                 break;
             }
+
+            // The stored pack numbers belong to another parcel. If the request dies before the
+            // retry saves new ones, the order must not offer a label for someone else's parcel.
+            $this->mark_dispatch_failed( $order_ids[0], strip_tags( $result_xml_string ) );
         }
 
         if ( ! $transport_error && strpos( $result_xml_string, 'type="ok"' ) !== false ) {
             foreach ($order_ids as $order_id) {
                 $order = wc_get_order( $order_id );
-                if (!$this->venipak_is_status_change_disabled)  {
-                    $order->update_status('completed', __( 'Order dispatched to Venipak', 'woocommerce-shopup-venipak-shipping' ));
-                }
-
+                // Record Venipak's acceptance before changing the order status: that change runs
+                // every status hook (customer emails, other plugins), and if one of them dies the
+                // shipment must not be left looking undispatched.
                 $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
                 $venipak_shipping_order_data['status'] = 'sent';
                 $venipak_shipping_order_data['error_message'] = '';
                 $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
                 $order->save();
+
+                if (!$this->venipak_is_status_change_disabled)  {
+                    $order->update_status('completed', __( 'Order dispatched to Venipak', 'woocommerce-shopup-venipak-shipping' ));
+                }
             }
             return array('status' => 'ok', 'data' => $venipak_shipping_order_data);
         } else {
-            $order = wc_get_order( $order_ids[0] );
-            $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
-            $venipak_shipping_order_data['status'] = 'error';
-            $venipak_shipping_order_data['error_message'] = $transport_error ? $transport_error : strip_tags($result_xml_string);
-            $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
-            $order->save();
+            $error_message = $transport_error ? $transport_error : strip_tags($result_xml_string);
+            $this->mark_dispatch_failed( $order_ids[0], $error_message );
             if ( $transport_error ) {
                 error_log( 'VENIPAK ' . $url . ' dispatch failed: ' . $transport_error );
             }
-            return array('status' => 'error', 'data' => $venipak_shipping_order_data['error_message']);
+            return array('status' => 'error', 'data' => $error_message);
         }
+    }
+
+    private function mark_dispatch_failed( $order_id, $error_message ) {
+        $order = wc_get_order( $order_id );
+        $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
+        $venipak_shipping_order_data['status'] = 'error';
+        $venipak_shipping_order_data['error_message'] = $error_message;
+        $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
+        $order->save();
     }
 
     /**
@@ -464,7 +496,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             if (!$venipak_shipping_order_data) {
                 $venipak_shipping_order_data = [];
             } else {
-                if ($venipak_shipping_order_data['status'] === 'sent') { continue; };
+                if (isset($venipak_shipping_order_data['status']) && $venipak_shipping_order_data['status'] === 'sent') { continue; };
             }
 
             $venipak_pickup_point = venipak_resolve_order_pickup($order);
@@ -743,7 +775,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 }
             }
 
-            // Update venipak_shipping_order_data
+            // Update venipak_shipping_order_data. These pack numbers have not been sent yet, so an
+            // 'error' left from an earlier attempt no longer describes them: until Venipak answers
+            // the order is in flight, which is_unconfirmed() recognises if the answer never comes.
+            $venipak_shipping_order_data['status'] = '';
             $venipak_shipping_order_data['manifest'] = $manifest_value;
             $venipak_shipping_order_data['pack_numbers'] = $pack_numbers;
             $venipak_shipping_order_data['weight'] = $total_weight;

@@ -121,10 +121,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
 		$venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
         $status = '';
 		if ($venipak_shipping_order_data) {
-			$status = $venipak_shipping_order_data['status'];
-			$pack_numbers = $venipak_shipping_order_data['pack_numbers'];
-			$error_message = $venipak_shipping_order_data['error_message'];
-			$manifest = $venipak_shipping_order_data['manifest'];
+			$status = isset($venipak_shipping_order_data['status']) ? $venipak_shipping_order_data['status'] : '';
+			$pack_numbers = isset($venipak_shipping_order_data['pack_numbers']) ? $venipak_shipping_order_data['pack_numbers'] : null;
+			$error_message = isset($venipak_shipping_order_data['error_message']) ? $venipak_shipping_order_data['error_message'] : '';
+			$manifest = isset($venipak_shipping_order_data['manifest']) ? $venipak_shipping_order_data['manifest'] : '';
 		} 
 		// else {
 		// 	$status = $order->get_meta('venipak_shipping_status');
@@ -136,9 +136,27 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
 		$content = '<div id="shopup_venipak_shipping_wrapper_order_' . $post_id . '">';
 		$pack_numbers_string = isset($pack_numbers) ? implode(', ', $pack_numbers) : '';
 		$content .= isset($tracking_data) ? '<span><strong>'.$tracking_data.'</strong></span>' : "";
-		if ($status === 'sent' && isset($pack_numbers)) {
+		$is_unconfirmed = Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::is_unconfirmed($venipak_shipping_order_data);
+		if (($status === 'sent' && isset($pack_numbers)) || $is_unconfirmed) {
 			$content .= '<div>' . $pack_numbers_string . '</div>';
-			$content .= '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;">
+			$content .= $this->get_print_buttons_html($post_id, $pack_numbers_string, $manifest);
+			if ($is_unconfirmed && $order->get_status() === 'processing') {
+				$content .= $this->get_dispatch_button_html($post_id);
+			}
+		} elseif ($status === 'error') {
+			$content .= '<div class="venipak-shipping-error">' . $error_message . '</div>';
+			$content .= $this->get_dispatch_button_html($post_id);
+		} elseif ($order->get_status() === 'processing') {
+			$content .= '<div>' . $pack_numbers_string . '</div>';
+			$content .= $this->get_dispatch_button_html($post_id);
+		}
+
+		$content .= '</div>';
+		echo $content;
+	}
+
+	private function get_print_buttons_html($post_id, $pack_numbers_string, $manifest) {
+		return '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;">
     <a class="button button-primary btn-sm" style="font-size: 20px; display: flex; align-items: center; gap: 5px;" title="' . esc_attr($pack_numbers_string) . '" target="_blank" href="' . esc_url(admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $post_id) . '">
         <span class="dashicons dashicons-tag"></span>
     </a>
@@ -146,16 +164,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
         <span class="dashicons dashicons-media-document"></span>
     </a>
 </div>';
-		} elseif ($status === 'error') {
-			$content .= '<div class="venipak-shipping-error">' . $error_message . '</div>';
-			$content .= '<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: ' . $post_id . ' });">' . __( 'Dispatch', 'woocommerce-shopup-venipak-shipping' ) . '</span>';
-		} elseif ($order->get_status() === 'processing') {
-			$content .= '<div>' . $pack_numbers_string . '</div>';
-			$content .= '<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: ' . $post_id . ' });">' . __( 'Dispatch', 'woocommerce-shopup-venipak-shipping' ) . '</span>';
-		}
+	}
 
-		$content .= '</div>';
-		echo $content;
+	private function get_dispatch_button_html($post_id) {
+		return '<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: ' . $post_id . ' });">' . __( 'Dispatch', 'woocommerce-shopup-venipak-shipping' ) . '</span>';
 	}
 
 	public function get_order_tracking_data($pack_number, $order) {    

@@ -4,7 +4,7 @@ Tags: Venipak
 Requires at least: 6.5
 Requires PHP: 7.4
 Tested up to: 7.0.3
-Stable tag: 1.26.5
+Stable tag: 1.26.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,8 @@ A Venipak delivery method plugin for WooCommerce. Provides delivery via courier 
 * To use this extension, you must have an active contract with Venipak. https://www.venipak.com/
 * Additionally, you must have user credentials for the Venipak API. Please contact Venipak sales. https://www.venipak.com/
 
-Support email: hello@akadrama.com
+Support email: akadrama@venipak.com
+Support: https://www.venipak.com/
 
 == Installation ==
 
@@ -29,6 +30,11 @@ Support email: hello@akadrama.com
 == Screenshots ==
 
 == Changelog ==
+
+= 1.26.6 =
+* Fix: An order whose dispatch was cut off before Venipak's answer was recorded (a PHP time limit, an error in another plugin) showed "Undefined array key" warnings in the orders list and had no label button. Such orders now show their pack numbers and the label button. Printing the label marks the dispatch as sent once Venipak returns it, so a later Dispatch does not register the parcel twice; if Venipak has no such parcel, the label window says so
+* Fix: A dispatch Venipak accepted is now recorded before the order status changes, so an error in another plugin's order status hook can no longer leave the order looking undispatched
+* Fix: When Venipak reported a pack number as already in use, the order kept that number until the retry finished; if the retry was cut off, the order pointed at another parcel. The collision is now recorded before retrying
 
 = 1.26.5 =
 * Fix: A dispatch that never reached Venipak was treated as success. An empty or failed response marked the orders "completed" and "sent" while nothing was registered and no labels existed. The dispatch now requires a real confirmation from Venipak and reports the transport error otherwise

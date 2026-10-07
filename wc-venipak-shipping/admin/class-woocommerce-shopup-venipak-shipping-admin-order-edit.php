@@ -127,6 +127,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		}
 		 
 		$get_venipak_shipping_order_data = $this->get_venipak_shipping_order_data($order); 
+		$is_unconfirmed = Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::is_unconfirmed($get_venipak_shipping_order_data);
 
 		?>
 		<br class="clear" />
@@ -198,7 +199,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			<?php if ($status === 'error') { ?>
 				<p style="color: red;"><?php echo esc_html($error_message) ?></p>
 			<?php } ?>
-			<?php if ($status === 'sent') { ?>
+			<?php if ($status === 'sent' || $is_unconfirmed) { ?>
 				<div>
 					<a class="button button-primary" target="_blank" href="<?php echo admin_url('admin-ajax.php'); ?>?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=<?php echo $order->get_id(); ?>"><?php echo __( 'Print labels', 'woocommerce-shopup-venipak-shipping' ) ?></a>
 					<a class="button button-primary" target="_blank" href="<?php echo admin_url('admin-ajax.php'); ?>?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=<?php echo $order->get_id(); ?>"><?php echo sprintf( __( 'Print manifest (%s)', 'woocommerce-shopup-venipak-shipping' ), $manifest) ?></a>
@@ -276,7 +277,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	public function get_venipak_status($order) {
 		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
 		if ($order_data) {
-			return $order_data['status'];
+			return isset($order_data['status']) ? $order_data['status'] : null;
 		}
 		return null;
 	}
@@ -300,7 +301,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	public function get_venipak_error($order) {
 		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
 		if ($order_data) {
-			return $order_data['error_message'];
+			return isset($order_data['error_message']) ? $order_data['error_message'] : '';
 		}
 		return null;
 	}
@@ -506,7 +507,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 
 	public function get_venipak_weight($order) {
 		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
-		if ($order_data && $order_data['status'] === 'sent') {
+		if ($order_data && isset($order_data['status']) && $order_data['status'] === 'sent') {
 			return $order_data['weight'];
 		}
 

@@ -148,8 +148,31 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 				'format' => $this->label_format,
 				'carrier' => 'all'
 			),
-			'venipak-label-' . $order_id . '.pdf'
+			'venipak-label-' . $order_id . '.pdf',
+			function () use ( $order_id ) {
+				$this->confirm_unconfirmed_dispatch( $order_id );
+			}
 		);
+	}
+
+	/**
+	 * Venipak handing back a label for an order's pack numbers proves it registered them. An
+	 * order whose dispatch was cut off before that answer was recorded is marked sent here, so a
+	 * later Dispatch does not register the parcel a second time under new pack numbers. The
+	 * order status is left alone: changing it would send customer emails from a print action.
+	 *
+	 * @since    1.26.6
+	 */
+	private function confirm_unconfirmed_dispatch( $order_id ) {
+		$order = wc_get_order( $order_id );
+		$venipak_shipping_order_data = json_decode( $order->get_meta( 'venipak_shipping_order_data', true ), true );
+		if ( ! Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::is_unconfirmed( $venipak_shipping_order_data ) ) {
+			return;
+		}
+		$venipak_shipping_order_data['status'] = 'sent';
+		$venipak_shipping_order_data['error_message'] = '';
+		$order->update_meta_data( 'venipak_shipping_order_data', json_encode( $venipak_shipping_order_data ) );
+		$order->save();
 	}
 
 
@@ -212,9 +235,11 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 	 * window with nothing to go on. A bulk print of many labels is also the slowest call the
 	 * plugin makes, so it cannot run on WordPress's 5 second default timeout.
 	 *
+	 * $on_pdf runs once Venipak's answer is known to be a real PDF, before it is sent.
+	 *
 	 * @since    1.26.4
 	 */
-	private function stream_pdf( $url, $body, $filename ) {
+	private function stream_pdf( $url, $body, $filename, $on_pdf = null ) {
 		$response = wp_remote_post( $url, array(
 			'body' => $body,
 			'timeout' => 60,
@@ -244,6 +269,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Label {
 				__( 'Venipak returned no printable PDF: %s', 'woocommerce-shopup-venipak-shipping' ),
 				$detail !== '' ? $detail : __( 'empty response', 'woocommerce-shopup-venipak-shipping' )
 			) );
+		}
+
+		if ( $on_pdf ) {
+			$on_pdf();
 		}
 
 		if ( headers_sent() ) {
