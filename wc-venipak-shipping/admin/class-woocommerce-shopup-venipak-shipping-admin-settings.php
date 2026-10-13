@@ -490,6 +490,15 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Settings {
 			'shopup_venipak_shipping_section_sender',
 			array( 'field' => 'shopup_venipak_shipping_field_sendercontactemail', 'required' => true )
 		);
+
+		add_settings_field(
+			'shopup_venipak_shipping_field_sendereori',
+			__( 'EORI number', 'woocommerce-shopup-venipak-shipping' ),
+			array($this, 'shopup_venipak_shipping_field_text_cb'),
+			'shopup_venipak_shipping',
+			'shopup_venipak_shipping_section_sender',
+			array( 'field' => 'shopup_venipak_shipping_field_sendereori' )
+		);
 	}
 
 

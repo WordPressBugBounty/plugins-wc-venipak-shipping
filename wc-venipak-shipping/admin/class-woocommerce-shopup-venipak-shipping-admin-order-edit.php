@@ -128,6 +128,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		 
 		$get_venipak_shipping_order_data = $this->get_venipak_shipping_order_data($order); 
 		$is_unconfirmed = Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::is_unconfirmed($get_venipak_shipping_order_data);
+		// The same rule the dispatch reads the customs input by.
+		$needs_customs_details = Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::order_needs_customs_details( $order );
+		// An empty shipment value means the order total, which only an EUR order can supply.
+		$is_eur_order = $order->get_currency() === 'EUR';
+		if ( $needs_customs_details ) {
+			// The customs block offers "Choose from library".
+			wp_enqueue_media();
+		}
 
 		?>
 		<br class="clear" />
@@ -137,7 +145,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			<p><strong><?php echo __( 'Products count', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $product_count . ' ' . __( 'vnt.', 'woocommerce-shopup-venipak-shipping' ) ?></p>
 			<p><strong><?php echo __( 'Packages count', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $pack_count . ' ' . __( 'vnt.', 'woocommerce-shopup-venipak-shipping' )?></p>
 		<?php if ($venipak_pickup_point_title) { ?>
-			<p><strong><?php echo __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $venipak_pickup_point_title ?></p>
+			<p><strong><?php echo __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo esc_html( $venipak_pickup_point_title ); ?></p>
 		<?php } ?>
 		<?php if ($tracking_code) { ?>
 			<p><strong><?php echo __( 'Tracking number', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $tracking_code ?></p>
@@ -148,7 +156,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 				foreach($order_tracking_data as $data)
 				{  
 					?>
-					<span><?php echo isset($data['date']) ? $data['date'] : '';?><br><strong><?php echo isset($data['pack_status_text']) ? $data['pack_status_text'] : ''?></strong></span> 
+					<span><?php echo isset($data['date']) ? esc_html($data['date']) : '';?><br><strong><?php echo isset($data['pack_status_text']) ? esc_html($data['pack_status_text']) : ''?></strong></span> 
 					<?php
 				}
 			}
@@ -157,7 +165,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 				foreach($get_venipak_shipping_order_data['pack_status_text'] as $key => $pack_status_text)
 				{  
 					?>
-					<span><?php echo isset($get_venipak_shipping_order_data['date'][$key]) ? $get_venipak_shipping_order_data['date'][$key] : '';?><br><strong><?php echo isset($pack_status_text) ? $pack_status_text : ''?></strong></span> 
+					<span><?php echo isset($get_venipak_shipping_order_data['date'][$key]) ? esc_html($get_venipak_shipping_order_data['date'][$key]) : '';?><br><strong><?php echo isset($pack_status_text) ? esc_html($pack_status_text) : ''?></strong></span> 
 					<?php
 				} 
 			}?> 
@@ -166,9 +174,10 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 				<p><?php echo __( 'Packages count', 'woocommerce-shopup-venipak-shipping' ); ?>: <button onclick="addPackage();" type="button"><?php echo __( 'Add package', 'woocommerce-shopup-venipak-shipping' ); ?></button></p>
 				<table id="packages-table">
 					<tr>
-						<th><?php echo __( 'Width', 'woocommerce-shopup-venipak-shipping' ); ?></th>
-						<th><?php echo __( 'Height', 'woocommerce-shopup-venipak-shipping' ); ?></th>
-						<th><?php echo __( 'Length', 'woocommerce-shopup-venipak-shipping' ); ?></th>
+						<?php // Dimensions are typed in the store's unit and converted to metres on dispatch. ?>
+						<th><?php echo esc_html( $this->dimension_header( __( 'Width', 'woocommerce-shopup-venipak-shipping' ) ) ); ?></th>
+						<th><?php echo esc_html( $this->dimension_header( __( 'Height', 'woocommerce-shopup-venipak-shipping' ) ) ); ?></th>
+						<th><?php echo esc_html( $this->dimension_header( __( 'Length', 'woocommerce-shopup-venipak-shipping' ) ) ); ?></th>
 						<th><?php echo __( 'Weight', 'woocommerce-shopup-venipak-shipping' ); ?></th>
 						<th><?php echo __( 'Description', 'woocommerce-shopup-venipak-shipping' ); ?></th>
 						<th><?php echo __( 'Remove', 'woocommerce-shopup-venipak-shipping' ); ?></th>
@@ -184,15 +193,42 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 					</tr>
 					<?php }	?>
 				</table>
-				<div>
-					<input id="shopup_venipak_shipping_global" type="checkbox" name="is_global" />
-					<label for="shopup_venipak_shipping_global"><?php echo __( 'Global shipment', 'woocommerce-shopup-venipak-shipping' ) ?></label>
-				</div><br />
+				<?php if ( $needs_customs_details ) { ?>
+				<?php // No name attributes: these are sent by the Dispatch button, not by the order form's Update. ?>
+				<div id="shopup_venipak_shipping_customs">
+					<p>
+						<label for="shopup_venipak_shipping_doc_type"><?php esc_html_e( 'Customs document', 'woocommerce-shopup-venipak-shipping' ); ?></label><br />
+						<select id="shopup_venipak_shipping_doc_type">
+							<option value="commercial_invoice"><?php esc_html_e( 'Commercial invoice', 'woocommerce-shopup-venipak-shipping' ); ?></option>
+							<option value="pro_forma_invoice"><?php esc_html_e( 'Pro forma invoice', 'woocommerce-shopup-venipak-shipping' ); ?></option>
+							<option value="certificate_of_origin"><?php esc_html_e( 'Certificate of origin', 'woocommerce-shopup-venipak-shipping' ); ?></option>
+						</select>
+					</p>
+					<p>
+						<label class="button"><?php esc_html_e( 'Upload file', 'woocommerce-shopup-venipak-shipping' ); ?><input id="shopup_venipak_shipping_doc_file" type="file" accept="application/pdf" style="display: none;" /></label>
+						<button id="shopup_venipak_shipping_doc_library" class="button" type="button" data-title="<?php esc_attr_e( 'Customs document', 'woocommerce-shopup-venipak-shipping' ); ?>"><?php esc_html_e( 'Choose from library', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+						<input id="shopup_venipak_shipping_doc_id" type="hidden" />
+					</p>
+					<p id="shopup_venipak_shipping_doc_chosen" style="display: none;"><span class="name"></span> <a href="#" title="<?php esc_attr_e( 'Remove', 'woocommerce-shopup-venipak-shipping' ); ?>">&#10005;</a></p>
+					<p class="description"><?php esc_html_e( 'PDF. Needed for destinations outside the EU. For invoices prefer "Upload file": files in the media library are publicly reachable.', 'woocommerce-shopup-venipak-shipping' ); ?></p>
+					<p>
+						<label for="shopup_venipak_shipping_value"><?php esc_html_e( 'Shipment value, EUR', 'woocommerce-shopup-venipak-shipping' ); ?></label><br />
+						<input id="shopup_venipak_shipping_value" type="number" min="0.01" step="0.01" value="" placeholder="<?php echo $is_eur_order ? esc_attr( $order->get_total() ) : ''; ?>" />
+					</p>
+					<?php if ( ! $is_eur_order ) { ?>
+					<p class="description"><?php
+						/* translators: %s: order total with its currency, e.g. "120.00 USD" */
+						printf( esc_html__( 'Order total: %s — enter the value in EUR.', 'woocommerce-shopup-venipak-shipping' ), esc_html( $order->get_total() . ' ' . $order->get_currency() ) );
+					?></p>
+					<?php } ?>
+				</div>
+				<?php } ?>
+				<br />
 			<?php if ($status !== 'sent') { ?>
-				<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: <?php echo $order->get_id(); ?> });"><?php echo __( 'Dispatch', 'woocommerce-shopup-venipak-shipping' ) ?></span>
+				<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: <?php echo $order->get_id(); ?>, button: this });"><?php echo __( 'Dispatch', 'woocommerce-shopup-venipak-shipping' ) ?></span>
 			<?php } ?>
 			<?php if ($status === 'sent') { ?>
-				<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: <?php echo $order->get_id(); ?>, newDispatch: true });"><?php echo __( 'Dispatch one more time', 'woocommerce-shopup-venipak-shipping' ) ?></span>
+				<span class="button button-primary" onclick="event.stopPropagation(); shopup_venipak_shipping_dispatch_order_by_id({ id: <?php echo $order->get_id(); ?>, newDispatch: true, button: this });"><?php echo __( 'Dispatch one more time', 'woocommerce-shopup-venipak-shipping' ) ?></span>
 			<?php } ?>
 			</div>
 			<div id="shopup_venipak_shipping_wrapper_order_<?php echo $order->get_id(); ?>" style="margin-top: 10px;">
@@ -202,14 +238,21 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			<?php if ($status === 'sent' || $is_unconfirmed) { ?>
 				<div>
 					<a class="button button-primary" target="_blank" href="<?php echo admin_url('admin-ajax.php'); ?>?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=<?php echo $order->get_id(); ?>"><?php echo __( 'Print labels', 'woocommerce-shopup-venipak-shipping' ) ?></a>
-					<a class="button button-primary" target="_blank" href="<?php echo admin_url('admin-ajax.php'); ?>?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=<?php echo $order->get_id(); ?>"><?php echo sprintf( __( 'Print manifest (%s)', 'woocommerce-shopup-venipak-shipping' ), $manifest) ?></a>
+					<a class="button button-primary" target="_blank" href="<?php echo admin_url('admin-ajax.php'); ?>?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=<?php echo $order->get_id(); ?>"><?php echo sprintf( __( 'Print manifest (%s)', 'woocommerce-shopup-venipak-shipping' ), esc_html($manifest)) ?></a>
 				</div>
 			<?php } ?>
 			</div>
 		</div>
 		<div class="edit_address">
 		<?php
-		$default_options = $venipak_pickup_point_id ? [$venipak_pickup_point_id => $venipak_pickup_point_title] : [];
+		// The select holds the stored point so that Update keeps it, also one Venipak no longer lists.
+		// A courier order gets none: it is delivered to the address, so a stored point is never used.
+		$is_courier_order = $shipping_method_id === 'shopup_venipak_shipping_courier_method';
+		$selected_point_id = ! $is_courier_order && $venipak_pickup_point_id !== '' ? $venipak_pickup_point_id : null;
+		$default_options = array();
+		if ( $selected_point_id !== null ) {
+			$default_options[ $selected_point_id ] = $venipak_pickup_point_title ?: $selected_point_id . ' (' . __( 'no longer available', 'woocommerce-shopup-venipak-shipping' ) . ')';
+		}
 		woocommerce_wp_select( array(
 			'id' => 'venipak_pickup_point',
 			'label' => __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ),
@@ -219,17 +262,21 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		) );
 		?>
 			<button type="button" onclick="jQuery('.venipak_pickup_point').val(null).trigger('change');"><?php echo __( 'Remove', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+		<?php if ( $is_courier_order ) { ?>
+			<p class="description"><?php esc_html_e( 'Courier orders are delivered to the address. To send this order to a pickup point, change its shipping method to Venipak pickup point.', 'woocommerce-shopup-venipak-shipping' ); ?></p>
+		<?php } ?>
 		</div>
 		<script>
 		jQuery(document).ready(function($) {
-			$.get('admin-ajax.php', { 'action': 'woocommerce_venipak_shipping_pickup_points' }, function(data) {
+			$.get('admin-ajax.php', { 'action': 'woocommerce_venipak_shipping_pickup_points', 'order_id': <?php echo (int) $order->get_id(); ?> }, function(data) {
 			$('.venipak_pickup_point').select2({
 				data: data.map(value => ({
 					id: value.id,
 					text: `${value.name}, ${value.address}, ${value.city}, ${value.zip}`,
 				})),
 		    });
-	      	$('.venipak_pickup_point').val(<?php echo wp_json_encode($venipak_pickup_point_id); ?>).trigger('change');
+	      	<?php // JSON_HEX_TAG: an old order's meta can be a whole point as JSON, and its "<" must not reach the HTML parser inside this script. ?>
+	      	$('.venipak_pickup_point').val(<?php echo wp_json_encode( $selected_point_id, JSON_HEX_TAG ); ?>).trigger('change');
       }, 'json');
   	});
 
@@ -252,15 +299,33 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	public function add_venipak_shipping_order_save( $order_id ) {
 		$order = wc_get_order($order_id);
 		if ( isset( $_POST['venipak_pickup_point'] )) {
-			venipak_store_order_pickup( $order, wc_clean( $_POST[ 'venipak_pickup_point' ] ) );
+			// WooCommerce hands this hook $_POST still slashed.
+			$posted = is_string( $_POST['venipak_pickup_point'] ) ? trim( wp_unslash( $_POST['venipak_pickup_point'] ) ) : '';
+			// An order from before the id-only meta posts its whole stored point back as JSON;
+			// an unchanged value is left alone so such an order keeps its point. A new choice
+			// must be an id, as at checkout: anything else clears, as an empty value does.
+			if ( $posted !== trim( (string) $order->get_meta( 'venipak_pickup_point', true ) ) ) {
+				venipak_store_order_pickup( $order, ctype_digit( $posted ) ? $posted : '' );
+			}
 		} else {
 			venipak_clear_order_pickup( $order );
 		}
 		$order->save();
 	}
 
+	/**
+	 * "Width, cm": a pack table column with the store's dimension unit.
+	 */
+	private function dimension_header($column) {
+		/* translators: 1: column name, e.g. "Width"; 2: the store's dimension unit, e.g. "cm" */
+		return sprintf( __( '%1$s, %2$s', 'woocommerce-shopup-venipak-shipping' ), $column, get_option( 'woocommerce_dimension_unit' ) );
+	}
+
+	/**
+	 * The point the parcel goes to, as the order screen shows it; null for delivery to the address.
+	 */
 	public function get_venipak_point_title($order) {
-		$venipak_pickup_entity = venipak_resolve_order_pickup($order, $source);
+		$venipak_pickup_entity = venipak_delivery_pickup_point($order, $source);
 		if (!$venipak_pickup_entity) {
 			return null;
 		}
@@ -285,7 +350,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	public function get_venipak_tracking_code($order) {
 		$order_data = json_decode($order->get_meta('venipak_shipping_order_data'), true);
 		if ($order_data) {
-			return $order_data['pack_numbers'] ? implode('<br/>', $order_data['pack_numbers']) : '';
+			return $order_data['pack_numbers'] ? implode('<br/>', array_map('esc_html', $order_data['pack_numbers'])) : '';
 		}
 		return null;
 	}
@@ -438,7 +503,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 		}
 		$weight = wc_get_weight($weight, 'kg');
 		$pack_collection = array();
-		if ($order->get_meta('venipak_pickup_point', true )) {
+		// A pickup point takes one parcel, as the dispatch builds it.
+		if (venipak_delivery_pickup_point($order)) {
 			$pack_collection[] = array(
 				'length' => 0,
 				'width' => 0,

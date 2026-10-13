@@ -161,6 +161,61 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      */
     private $shopup_venipak_shipping_field_forcedispatch;
 
+    private $venipak_sender_eori;
+
+    /**
+     * Customs document types Venipak's import API accepts as doc_type.
+     *
+     * @since    1.27.0
+     */
+    const CUSTOMS_DOCUMENT_TYPES = array( 'commercial_invoice', 'pro_forma_invoice', 'certificate_of_origin' );
+
+    /**
+     * The document travels base64-encoded inside the import XML, so it is kept small.
+     *
+     * @since    1.27.0
+     */
+    const CUSTOMS_DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
+
+    /**
+     * Sender countries Venipak ships from without a global shipment; any other sender is global.
+     *
+     * @since    1.27.0
+     */
+    const BALTIC_COUNTRIES = array( 'LT', 'LV', 'EE' );
+
+    /**
+     * Consignee countries Venipak delivers to without a global shipment
+     * (BALTIC_COUNTRIES + INTERNATIONAL_COUNTRIES).
+     *
+     * @since    1.27.0
+     */
+    const NETWORK_COUNTRIES = array( 'LT', 'LV', 'EE', 'PL', 'FI' );
+
+    /**
+     * Consignee countries that make a shipment from the Baltics "international" for Venipak:
+     * its own shipment type, marked with an <international> block instead of <global>.
+     *
+     * @since    1.27.0
+     */
+    const INTERNATIONAL_COUNTRIES = array( 'PL', 'FI' );
+
+    /**
+     * Venipak's weight group boundary for international shipments: one shipment holds either
+     * packs up to this weight or heavier ones, and the heavier ones need their dimensions.
+     *
+     * @since    1.27.0
+     */
+    const INTERNATIONAL_WEIGHT_GROUP_KG = 30;
+
+    /**
+     * Shipment types returned by get_shipment_type().
+     *
+     * @since    1.27.0
+     */
+    const SHIPMENT_DOMESTIC = 'domestic';
+    const SHIPMENT_INTERNATIONAL = 'international';
+    const SHIPMENT_GLOBAL = 'global';
 
     /**
      * Initialize the class and set its properties.
@@ -190,6 +245,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         $this->venipak_is_status_change_disabled = $settings->get_option_by_key('shopup_venipak_shipping_field_isstatuschangedisabled');
         $this->shopup_venipak_shipping_field_maxpackproducts = intval($settings->get_option_by_key('shopup_venipak_shipping_field_maxpackproducts'));
         $this->shopup_venipak_shipping_field_forcedispatch = $settings->get_option_by_key('shopup_venipak_shipping_field_forcedispatch');
+        $this->venipak_sender_eori = $settings->get_option_by_key('shopup_venipak_shipping_field_sendereori');
     }
 
     /**
@@ -200,7 +256,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
     public function add_venipak_shipping_bulk_action_process( $redirect_to, $action, $post_ids ) {
         if ( $action === 'shopup_venipak_shipping_dispatch' ) {
             foreach ($post_ids as $order_id) {
-                $this->venipak_shipping_dispatch_order([$order_id], false, false);
+                $this->venipak_shipping_dispatch_order([$order_id], false);
             }
         }
         return $redirect_to;
@@ -212,19 +268,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      * @since    1.0.0
      */
     public function add_venipak_shipping_dispatch_force() {
-        check_ajax_referer( 'venipak_shipping_admin', 'nonce' );
-        if ( ! current_user_can( 'manage_woocommerce' ) ) {
-            wp_die( -1, 403 );
-        }
-        $order_id = intval( $_POST['order_id'] );
-        $order = wc_get_order($order_id);
-        $order_data = $order->get_meta('venipak_shipping_order_data', true);
-        $venipak_shipping_order_data = json_decode($order_data, true);
-        $venipak_shipping_order_data['status'] = '';
-        $venipak_shipping_order_data['pack_numbers'] = [];
-        $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
-        $order->save();
-        $this->add_venipak_shipping_dispatch();
+        $this->dispatch_from_order_page( true );
     }
 
     /**
@@ -233,26 +277,198 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      * @since    1.0.0
      */
     public function add_venipak_shipping_dispatch() {
+        $this->dispatch_from_order_page( false );
+    }
+
+    /**
+     * The Dispatch buttons on the order page. $force ("Dispatch one more time") first clears the
+     * pack numbers of the earlier dispatch so that new ones are reserved.
+     *
+     * @since    1.27.0
+     */
+    private function dispatch_from_order_page( $force ) {
         check_ajax_referer( 'venipak_shipping_admin', 'nonce' );
         if ( ! current_user_can( 'manage_woocommerce' ) ) {
             wp_die( -1, 403 );
         }
         $order_id = intval( $_POST['order_id'] );
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            wp_die( -1, 404 );
+        }
         $packs = isset( $_POST['packs'] ) ? $_POST['packs'] : false;
-        $is_global = array_key_exists('is_global', $_POST) ? $_POST['is_global'] : false;
-        $result = $this->venipak_shipping_dispatch_order([$order_id], $packs, $is_global);
+        if ( $packs ) {
+            foreach ( $packs as $i => $pack ) {
+                // A decimal comma is read as a point, so 4,5 kg is 4.5. Not wc_format_decimal(): in a
+                // store whose price separator is "." it drops the comma and makes 4,5 into 45.
+                foreach ( array( 'weight', 'width', 'height', 'length' ) as $key ) {
+                    $packs[ $i ][ $key ] = str_replace( ',', '.', trim( wp_unslash( $pack[ $key ] ) ) );
+                }
+                // Typed in the store's dimension unit (the table header names it); Venipak wants metres.
+                // Text that is not a number becomes 0, which every check below reads as "not filled in".
+                foreach ( array( 'width', 'height', 'length' ) as $key ) {
+                    $packs[ $i ][ $key ] = round( wc_get_dimension( (float) $packs[ $i ][ $key ], 'm' ), 3 );
+                }
+            }
+        }
+        // The customs input is checked before the reset below. A refusal found later, inside the
+        // dispatch but before anything reaches Venipak, puts the saved data back further down.
+        // Without packs (the orders-list button, which has no customs fields) it is not read: such a
+        // dispatch is refused for the missing dimensions, recorded on the order as in bulk.
+        $customs = $packs && self::order_needs_customs_details( $order ) ? $this->get_customs_input_from_request( $order ) : null;
+        if ( is_wp_error( $customs ) ) {
+            self::print_dispatch_error( $customs->get_error_message() );
+            wp_die();
+        }
+
+        if ( $force ) {
+            $order_data_before_reset = $order->get_meta('venipak_shipping_order_data', true);
+            $venipak_shipping_order_data = json_decode($order->get_meta('venipak_shipping_order_data', true), true);
+            $venipak_shipping_order_data['status'] = '';
+            $venipak_shipping_order_data['pack_numbers'] = [];
+            $order->update_meta_data('venipak_shipping_order_data', json_encode($venipak_shipping_order_data));
+            $order->save();
+        }
+
+        $result = $this->venipak_shipping_dispatch_order([$order_id], $packs, $customs);
+        if ( $force && $result && ! empty( $result['refused'] ) ) {
+            // Nothing was sent, so the earlier dispatch still stands: keep it, not the refusal.
+            $order->update_meta_data('venipak_shipping_order_data', $order_data_before_reset);
+            $order->save();
+        }
 
         if (!$result) wp_die();
 
         if ($result['status'] === 'ok') {
             $pack_numbers = $result['data']['pack_numbers'];
             $pack_numbers_string = implode(', ', $pack_numbers);
-            $content = '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;"><a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" title="' . $pack_numbers_string . '" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-tag"></span></a> <a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-media-document"></span></a></div>';
+            $content = '<div class="venipak-shipping-pack" style="display: flex; gap: 5px;"><a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" title="' . esc_attr( $pack_numbers_string ) . '" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_label_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-tag"></span></a> <a style="font-size: 20px; display: flex; align-items: center; gap: 5px;" class="button button-primary" target="_blank" href="' . admin_url('admin-ajax.php') . '?action=woocommerce_shopup_venipak_shipping_get_manifest_pdf&order_id=' . $order_id . '"><span class="dashicons dashicons-media-document"></span></a></div>';
             echo $content;
         } else {
-            echo esc_html($result['data']);
+            self::print_dispatch_error( $result['data'] );
         }
         wp_die();
+    }
+
+    /**
+     * Red, as the order page shows a stored dispatch error, so a refusal reads as one.
+     *
+     * @since    1.27.0
+     */
+    private static function print_dispatch_error( $message ) {
+        echo '<p style="color: red;">' . esc_html( $message ) . '</p>';
+    }
+
+    /**
+     * The customs document and shipment value the order page sends with a global dispatch.
+     *
+     * @since    1.27.0
+     * @return   array|WP_Error    'document' => see get_customs_document_from_request(),
+     *                             'value' => decimal string, or null for the order total.
+     */
+    private function get_customs_input_from_request( $order ) {
+        $document = $this->get_customs_document_from_request();
+        if ( is_wp_error( $document ) ) {
+            return $document;
+        }
+
+        $value = isset( $_POST['value'] ) ? trim( wp_unslash( $_POST['value'] ) ) : '';
+        if ( $value === '' ) {
+            // Empty means the order total at dispatch time, which is only a value in EUR for an EUR order.
+            if ( $order->get_currency() !== 'EUR' ) {
+                return new WP_Error( 'venipak_customs_value', sprintf(
+                    /* translators: %s: order currency code, e.g. "USD" */
+                    __( 'Enter the shipment value in EUR: this order is in %s.', 'woocommerce-shopup-venipak-shipping' ),
+                    $order->get_currency()
+                ) );
+            }
+            return array( 'document' => $document, 'value' => null );
+        }
+
+        // Not wc_format_decimal(): it strips what it cannot read, so "1e3" would become 13.00.
+        $value = str_replace( ',', '.', $value );
+        // Compared in whole cents, so 0.001 is refused instead of being sent as 0.00.
+        if ( ! is_numeric( $value ) || round( (float) $value, 2 ) <= 0 ) {
+            return new WP_Error( 'venipak_customs_value', __( 'The shipment value must be a positive number.', 'woocommerce-shopup-venipak-shipping' ) );
+        }
+        return array( 'document' => $document, 'value' => number_format( (float) $value, 2, '.', '' ) );
+    }
+
+    /**
+     * The customs document comes either as an uploaded file ('customs_document') or as a media
+     * library attachment ID ('customs_document_id'). An upload is read straight from PHP's temp
+     * file and never stored: invoices carry personal data, and the uploads folder is public.
+     *
+     * @since    1.27.0
+     * @return   array|null|WP_Error    array('type', 'name', 'content' => base64), null when no document was given.
+     */
+    private function get_customs_document_from_request() {
+        $file = isset( $_FILES['customs_document'] ) ? $_FILES['customs_document'] : null;
+        $has_file = $file && $file['error'] !== UPLOAD_ERR_NO_FILE;
+        $attachment_id = isset( $_POST['customs_document_id'] ) ? absint( $_POST['customs_document_id'] ) : 0;
+        if ( ! $has_file && ! $attachment_id ) {
+            return null;
+        }
+
+        $doc_type = isset( $_POST['doc_type'] ) ? sanitize_key( wp_unslash( $_POST['doc_type'] ) ) : '';
+        if ( ! in_array( $doc_type, self::CUSTOMS_DOCUMENT_TYPES, true ) ) {
+            return new WP_Error( 'venipak_customs_document', __( 'Unknown customs document type.', 'woocommerce-shopup-venipak-shipping' ) );
+        }
+
+        if ( $has_file ) {
+            if ( $file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE ) {
+                return new WP_Error( 'venipak_customs_document', self::customs_document_too_large_message() );
+            }
+            if ( $file['error'] !== UPLOAD_ERR_OK || ! is_uploaded_file( $file['tmp_name'] ) ) {
+                return new WP_Error( 'venipak_customs_document', __( 'The customs document could not be uploaded.', 'woocommerce-shopup-venipak-shipping' ) );
+            }
+            return $this->read_customs_document( $file['tmp_name'], $file['name'], $doc_type );
+        }
+
+        $path = get_attached_file( $attachment_id );
+        if ( get_post_type( $attachment_id ) !== 'attachment' || get_post_mime_type( $attachment_id ) !== 'application/pdf' || ! $path || ! is_readable( $path ) ) {
+            return new WP_Error( 'venipak_customs_document', __( 'The selected customs document was not found in the media library.', 'woocommerce-shopup-venipak-shipping' ) );
+        }
+        return $this->read_customs_document( $path, basename( $path ), $doc_type );
+    }
+
+    /**
+     * Checks shared by both sources. The PDF test looks at the content, not the name: every PDF
+     * starts with "%PDF-" (the same rule finfo applies), and it needs no optional PHP extension.
+     *
+     * @since    1.27.0
+     */
+    private function read_customs_document( $path, $name, $doc_type ) {
+        if ( filesize( $path ) > self::customs_document_max_bytes() ) {
+            return new WP_Error( 'venipak_customs_document', self::customs_document_too_large_message() );
+        }
+        $content = file_get_contents( $path );
+        if ( $content === false || strncmp( $content, '%PDF-', 5 ) !== 0 ) {
+            return new WP_Error( 'venipak_customs_document', __( 'The customs document must be a PDF file.', 'woocommerce-shopup-venipak-shipping' ) );
+        }
+        return array(
+            'type' => $doc_type,
+            'name' => sanitize_file_name( $name ),
+            // Encoded once here: the dispatch retry loop rebuilds the XML up to four times.
+            'content' => base64_encode( $content ),
+        );
+    }
+
+    /**
+     * Our cap or the server's upload limit, whichever is lower. Also checked in the browser (admin.php).
+     *
+     * @since    1.27.0
+     */
+    public static function customs_document_max_bytes() {
+        return min( self::CUSTOMS_DOCUMENT_MAX_BYTES, wp_max_upload_size() );
+    }
+
+    public static function customs_document_too_large_message() {
+        return sprintf(
+            /* translators: %s: maximum file size, e.g. "5 MB" */
+            __( 'The customs document is too large. The limit is %s.', 'woocommerce-shopup-venipak-shipping' ),
+            size_format( self::customs_document_max_bytes() )
+        );
     }
 
     /**
@@ -273,6 +489,57 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         }
         $status = isset( $order_data['status'] ) ? $order_data['status'] : '';
         return $status !== 'sent' && $status !== 'error';
+    }
+
+    /**
+     * The country the shipment goes to, as written into <consignee><country>: the pickup point's
+     * for a pickup order, else the order address's. $pickup_point is venipak_delivery_pickup_point().
+     *
+     * @since    1.27.0
+     */
+    public static function get_consignee_country( $order, $pickup_point ) {
+        return $pickup_point ? $pickup_point['country'] : self::get_order_address( $order )['country'];
+    }
+
+    /**
+     * Venipak's shipment type, decided by the countries alone: global from a sender outside the
+     * Baltics or to a destination outside Venipak's network, else international to Poland or
+     * Finland, else domestic. An order without a country is not taken for global: it cannot be
+     * dispatched anyway, and Venipak's own error then names the missing country.
+     *
+     * @since    1.27.0
+     */
+    public static function get_shipment_type( $sender_country, $consignee_country ) {
+        if ( ! in_array( $sender_country, self::BALTIC_COUNTRIES, true ) || self::is_outside_network( $consignee_country ) ) {
+            return self::SHIPMENT_GLOBAL;
+        }
+        if ( in_array( $consignee_country, self::INTERNATIONAL_COUNTRIES, true ) ) {
+            return self::SHIPMENT_INTERNATIONAL;
+        }
+        return self::SHIPMENT_DOMESTIC;
+    }
+
+    private static function is_outside_network( $consignee_country ) {
+        return $consignee_country !== '' && ! in_array( $consignee_country, self::NETWORK_COUNTRIES, true );
+    }
+
+    /**
+     * Whether the order page asks for customs details (document, value in EUR): only for a
+     * destination outside Venipak's network, where customs apply. A non-Baltic sender shipping
+     * within the network is global in the XML but needs none. A pickup order whose point is gone
+     * gets none either: its dispatch is refused for the missing point, which should speak first.
+     *
+     * @since    1.27.0
+     */
+    public static function order_needs_customs_details( $order ) {
+        if ( self::has_missing_pickup_point( $order ) ) {
+            return false;
+        }
+        return self::is_outside_network( self::get_consignee_country( $order, venipak_delivery_pickup_point( $order ) ) );
+    }
+
+    private static function has_missing_pickup_point( $order ) {
+        return venipak_order_shipping_method_id( $order ) === 'shopup_venipak_shipping_pickup_method' && ! venipak_delivery_pickup_point( $order );
     }
 
     /**
@@ -300,9 +567,6 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $order = wc_get_order( $order_id );
             if ( ! $order ) continue;
 
-            $shipping_method = @array_shift( $order->get_shipping_methods() );
-            $shipping_method_id = $shipping_method ? $shipping_method['method_id'] : '';
-
             $venipak_shipping_order_data = json_decode( $order->get_meta( 'venipak_shipping_order_data' ), true );
             if ( ! $venipak_shipping_order_data ) {
                 $venipak_shipping_order_data = array();
@@ -315,26 +579,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 continue;
             }
 
-            if ( $shipping_method_id === 'shopup_venipak_shipping_pickup_method' && ! venipak_resolve_order_pickup( $order ) ) {
-                // Every other writer of this meta goes through getImportXML(), which fills these
-                // keys in. Readers therefore only test the decoded array for truthiness before
-                // dereferencing, so refusing here without them would hand them a partial array —
-                // a blank product count in the metabox and, on the customer's side, a tracking
-                // link built from a pack number that does not exist.
-                $products_count = 0;
-                foreach ( $order->get_items() as $product_item ) {
-                    $products_count += $product_item->get_quantity();
-                }
-                $venipak_shipping_order_data = array_merge( array(
-                    'pack_numbers' => array(),
-                    'manifest' => '',
-                    'products_count' => $products_count,
-                ), $venipak_shipping_order_data );
-
-                $venipak_shipping_order_data['status'] = 'error';
-                $venipak_shipping_order_data['error_message'] = $this->missing_pickup_point_message();
-                $order->update_meta_data( 'venipak_shipping_order_data', json_encode( $venipak_shipping_order_data ) );
-                $order->save();
+            if ( self::has_missing_pickup_point( $order ) ) {
+                $this->record_dispatch_refusal( $order, $this->missing_pickup_point_message() );
                 continue;
             }
 
@@ -345,16 +591,128 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
     }
 
     /**
+     * Mark an order as refused before anything was sent to Venipak, with the reason shown on
+     * the order and in the orders list.
+     *
+     * Every other writer of this meta goes through getImportXML(), which fills the keys below
+     * in. Readers therefore only test the decoded array for truthiness before dereferencing, so
+     * refusing without them would hand them a partial array — a blank product count in the
+     * metabox and, on the customer's side, a tracking link built from a pack number that does
+     * not exist.
+     *
+     * @since    1.27.0
+     */
+    private function record_dispatch_refusal( $order, $message ) {
+        $venipak_shipping_order_data = json_decode( $order->get_meta( 'venipak_shipping_order_data' ), true );
+        if ( ! $venipak_shipping_order_data ) {
+            $venipak_shipping_order_data = array();
+        }
+        $products_count = 0;
+        foreach ( $order->get_items() as $product_item ) {
+            $products_count += $product_item->get_quantity();
+        }
+        $venipak_shipping_order_data = array_merge( array(
+            'pack_numbers' => array(),
+            'manifest' => '',
+            'products_count' => $products_count,
+        ), $venipak_shipping_order_data );
+
+        $venipak_shipping_order_data['status'] = 'error';
+        $venipak_shipping_order_data['error_message'] = $message;
+        $order->update_meta_data( 'venipak_shipping_order_data', json_encode( $venipak_shipping_order_data ) );
+        $order->save();
+    }
+
+    /**
+     * A message if any manual pack misses its dimensions or description, which Venipak needs for
+     * a shipment outside its network; null if all are filled in.
+     *
+     * @since    1.27.0
+     */
+    private function incomplete_packs_error( $packs ) {
+        foreach ( $packs as $pack ) {
+            if ( ! ( $pack['width'] > 0 && $pack['height'] > 0 && $pack['length'] > 0 ) || trim( $pack['description'] ) === '' ) {
+                return __( 'Fill in width, height, length and description for every package going outside LT, LV, EE, PL and FI.', 'woocommerce-shopup-venipak-shipping' );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A message if a manual pack is under 1 cm on every side, null otherwise. Such a pack almost
+     * always means sizes typed in metres, as the order page took them before it used the store's
+     * unit. Dimensions in metres; a side left at 0 is "not given", not small.
+     *
+     * @since    1.27.0
+     */
+    private function implausibly_small_packs_error( $packs ) {
+        foreach ( $packs as $pack ) {
+            $sides = array( $pack['width'], $pack['height'], $pack['length'] );
+            if ( min( $sides ) > 0 && max( $sides ) < 0.01 ) {
+                $unit = get_option( 'woocommerce_dimension_unit' );
+                // A 30 x 20 x 10 cm box as the merchant would type it in the store's unit.
+                $example = array();
+                foreach ( array( 30, 20, 10 ) as $side_cm ) {
+                    $example[] = round( wc_get_dimension( $side_cm, $unit, 'cm' ), 2 );
+                }
+                return sprintf(
+                    /* translators: 1: the store's dimension unit, e.g. "cm"; 2: a 30 x 20 x 10 cm box in that unit, e.g. "30 × 20 × 10" */
+                    __( 'Package sizes are entered in %1$s, but one package comes out under 1 cm on every side. Check the sizes: a box of 30 × 20 × 10 cm is entered as %2$s.', 'woocommerce-shopup-venipak-shipping' ),
+                    $unit,
+                    implode( ' × ', $example )
+                );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A pack's volume in m³ for <volume>, from its sides in metres: fixed-point with up to six
+     * decimals, since PHP would write a small float as "8.0E-6". '0' when a side is missing or the
+     * pack is under 1 cm³.
+     *
+     * @since    1.27.0
+     */
+    private static function format_volume( $width, $height, $length ) {
+        return rtrim( rtrim( sprintf( '%.6F', (float) $width * (float) $height * (float) $length ), '0' ), '.' );
+    }
+
+    /**
+     * Why Venipak would refuse these packs as one international shipment, or null if it would
+     * not. Each pack: 'weight' in kg (manual packs as entered, built packs converted from the
+     * store's weight unit), and 'width', 'height', 'length' in metres when known.
+     *
+     * @since    1.27.0
+     */
+    private function international_packs_error( $packs ) {
+        $heavy_packs = array();
+        foreach ( $packs as $pack ) {
+            if ( $pack['weight'] > self::INTERNATIONAL_WEIGHT_GROUP_KG ) {
+                $heavy_packs[] = $pack;
+            }
+        }
+        if ( $heavy_packs && count( $heavy_packs ) < count( $packs ) ) {
+            return __( 'Shipments to Poland and Finland cannot mix packages up to 30 kg with heavier ones. Dispatch the heavier packages separately.', 'woocommerce-shopup-venipak-shipping' );
+        }
+        foreach ( $heavy_packs as $pack ) {
+            if ( ! isset( $pack['width'], $pack['height'], $pack['length'] ) || ! ( $pack['width'] > 0 && $pack['height'] > 0 && $pack['length'] > 0 ) ) {
+                return __( 'Packages over 30 kg to Poland or Finland need width, height and length.', 'woocommerce-shopup-venipak-shipping' );
+            }
+        }
+        return null;
+    }
+
+    /**
      *
      *
      * @since    1.0.0
      */
-    public function venipak_shipping_dispatch_order($order_ids, $packs, $is_global) {
+    public function venipak_shipping_dispatch_order($order_ids, $packs, $customs = null) {
         $url = 'https://go.venipak.lt/import/send.php';
 
         $order_ids = $this->reject_orders_with_missing_pickup_point( $order_ids );
         if ( ! $order_ids ) {
-            return array( 'status' => 'error', 'data' => $this->missing_pickup_point_message() );
+            return array( 'status' => 'error', 'data' => $this->missing_pickup_point_message(), 'refused' => true );
         }
 
         // Retry offsets: 0 (first try), then +1, +5, +10 if pack numbers collide
@@ -368,13 +726,17 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $this->settings->reserve_pack_numbers( $offset );
             }
 
-            $xml = $this->getImportXML( $order_ids, $packs, $is_global );
+            $xml = $this->getImportXML( $order_ids, $packs, $customs );
+            if ( is_wp_error( $xml ) ) {
+                return array( 'status' => 'error', 'data' => $xml->get_error_message(), 'refused' => true );
+            }
             if ( ! $xml ) return null;
 
             $body = array( 'user' => $this->venipak_username, 'pass' => $this->venipak_password, 'xml_text' => $xml );
             $args = array(
                 'body'    => $body,
-                'timeout' => 45,
+                // A request carrying a document of up to 5 MB (base64 inside the XML) needs longer to upload.
+                'timeout' => $customs && $customs['document'] ? 120 : 45,
                 'headers' => array(
                     'Referer' => 'https://woocommerce.com/',
                 ),
@@ -464,7 +826,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
      *
      * @since    1.0.0
      */
-    public function getImportXML($order_ids, $packs, $is_global_force) {
+    public function getImportXML($order_ids, $packs, $customs = null) {
         date_default_timezone_set('Europe/Vilnius');
         $client_id = $this->venipak_userid;
         $venipak_return_service =  $this->venipak_return_service;
@@ -499,7 +861,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 if (isset($venipak_shipping_order_data['status']) && $venipak_shipping_order_data['status'] === 'sent') { continue; };
             }
 
-            $venipak_pickup_point = venipak_resolve_order_pickup($order);
+            $venipak_pickup_point = venipak_delivery_pickup_point($order);
 
             $order_products = [];
             $min_age = 0;
@@ -551,18 +913,18 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
             $consignee = $document->createElement( 'consignee' );
             $shipment->appendChild($consignee);
             $order_address = $this->get_order_address($order);
+            $consignee_country = self::get_consignee_country($order, $venipak_pickup_point);
+            $country = $document->createElement( 'country', $consignee_country );
 
             if ($venipak_pickup_point) {
                 $name = $document->createElement( 'name', $venipak_pickup_point['name'] );
                 $company_code = $document->createElement( 'company_code',  $venipak_pickup_point['code'] );
                 $consignee->appendChild($company_code);
-                $country = $document->createElement( 'country', $venipak_pickup_point['country'] );
                 $city = $document->createElement( 'city', $venipak_pickup_point['city'] );
                 $address = $document->createElement( 'address', $venipak_pickup_point['address'] );
                 $post_code = $document->createElement( 'post_code', preg_replace('/\D/', '', $venipak_pickup_point['zip']));
             } else {
                 $name = $document->createElement( 'name', $order_address['full_name'] );
-                $country = $document->createElement( 'country', $order_address['country'] );
                 $city = $document->createElement( 'city', $order_address['city'] );
                 $address = $document->createElement( 'address', $order_address['address'] );
                 $post_code = $document->createElement( 'post_code', $order_address['postcode'] );
@@ -643,8 +1005,13 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $attribute->appendChild($return_service);           
             }
 
-            $local_delivery_countries = array("LT", "EE", "LV");
-            $is_global = $is_global_force || !in_array($this->venipak_sender_country, $local_delivery_countries);
+            $shipment_type = self::get_shipment_type($this->venipak_sender_country, $consignee_country);
+            $is_global = $shipment_type === self::SHIPMENT_GLOBAL;
+            $is_international = $shipment_type === self::SHIPMENT_INTERNATIONAL;
+            if ($is_international) {
+                // Our senders are Baltic, so the block stays empty: its only field, pickup_date, is for PL/FI senders.
+                $attribute->appendChild($document->createElement( 'international' ));
+            }
             if ($is_global) {
                 $global = $document->createElement( 'global' );
                 $attribute->appendChild($global);
@@ -652,8 +1019,19 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $global->appendChild($global_delivery);
                 $shipment_description = $document->createElement( 'shipment_description', $shipment_description_text );
                 $global->appendChild($shipment_description);
-                $value = $document->createElement( 'value',  $order->get_total());
+                $value = $document->createElement( 'value', $customs && $customs['value'] !== null ? $customs['value'] : $order->get_total() );
                 $global->appendChild($value);
+                if ($this->venipak_sender_eori) {
+                    $global->appendChild($document->createElement( 'eori', $this->venipak_sender_eori ));
+                }
+                if ($customs && $customs['document']) {
+                    $document_node = $document->createElement( 'document' );
+                    $document_node->appendChild($document->createElement( 'doc_type', $customs['document']['type'] ));
+                    $document_node->appendChild($document->createElement( 'doc_name', $customs['document']['name'] ));
+                    $document_node->appendChild($document->createElement( 'doc_mime', 'application/pdf' ));
+                    $document_node->appendChild($document->createElement( 'doc_content', $customs['document']['content'] ));
+                    $global->appendChild($document_node);
+                }
             }
             // Count how many pack numbers this order needs
             $needed_packs = 0;
@@ -675,6 +1053,24 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                 $needed_packs += $venipak_pickup_point ? 1 : max(1, ceil(sizeof($products_without_shipments) / $this->shopup_venipak_shipping_field_maxpackproducts));
             }
 
+            // Manual packs are checked before any pack number is reserved. Callers send one order
+            // per call, so refusing it ends the call.
+            $pack_error = $is_international && $packs ? $this->international_packs_error($packs) : null;
+            // Outside the network Venipak needs every pack's dimensions and description. Built packs
+            // have neither. A non-Baltic sender within the network goes as before.
+            if (self::is_outside_network($consignee_country)) {
+                $pack_error = $packs
+                    ? $this->incomplete_packs_error($packs)
+                    : __( 'Shipments to countries outside LT, LV, EE, PL and FI need each package\'s dimensions and description. Enter them in the packages table on the order page and dispatch from there.', 'woocommerce-shopup-venipak-shipping' );
+            }
+            if (!$pack_error && $packs) {
+                $pack_error = $this->implausibly_small_packs_error($packs);
+            }
+            if ($pack_error) {
+                $this->record_dispatch_refusal($order, $pack_error);
+                return new WP_Error('venipak_packs_refused', $pack_error);
+            }
+
             // Atomically reserve pack numbers
             $reserved_start = $this->settings->reserve_pack_numbers($needed_packs);
             $current_pack_nr = $reserved_start;
@@ -692,7 +1088,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                     $pack->appendChild($pack_no);
                     $packs[$i]['weight'] = max($packs[$i]['weight'], 0.1);
 
-                    if ($is_global) {
+                    if ($is_global || ($is_international && $packs[$i]['weight'] > self::INTERNATIONAL_WEIGHT_GROUP_KG)) {
                         $width = $document->createElement('width', $packs[$i]['width']);
                         $pack->appendChild($width);
                         $height = $document->createElement('height', $packs[$i]['height']);
@@ -701,9 +1097,9 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                         $pack->appendChild($length);
                     }
 
-                    if ($packs[$i]['width'] > 0 && $packs[$i]['height'] > 0 && $packs[$i]['length'] > 0) {
-                        $volume = $document->createElement('volume', (float)$packs[$i]['width'] * (float)$packs[$i]['length'] * (float)$packs[$i]['height']);
-                        $pack->appendChild($volume);
+                    $volume = self::format_volume($packs[$i]['width'], $packs[$i]['height'], $packs[$i]['length']);
+                    if ($volume !== '0') {
+                        $pack->appendChild($document->createElement('volume', $volume));
                     }
 
                     if ($is_global || $packs[$i]['weight'] > 0) {
@@ -720,9 +1116,13 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                     $total_weight += $packs[$i]['weight'];
                 }
             } else {
+                $auto_packs = [];
                 // Build packs for products with total_shipments
                 foreach ($products_with_shipments as $product) {
                     $product_total_shipments = $product->get_meta('_venipak_total_shipments', true) ?: $product->get_meta('_omnivalt_total_shipments', true);
+                    // Each pack carries its share of the product weight, in kg, as the order page's pack table shows it.
+                    $product_weight_kg = wc_get_weight($this->get_product_weight($product), 'kg');
+                    $pack_weight = max($product_weight_kg / max(intval($product_total_shipments), 1), 0.1);
                     for ($i = 0; $i < $product_total_shipments; $i++) {
                         $current_pack_nr++;
                         $pack_nr = $this->settings->format_pack_number($current_pack_nr);
@@ -730,15 +1130,16 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                         $pack_no = $document->createElement('pack_no', $pack_nr);
                         $pack->appendChild($pack_no);
 
-                        $weight = $document->createElement('weight', max($this->get_product_weight($product), 0.1));
+                        $weight = $document->createElement('weight', $pack_weight);
                         $pack->appendChild($weight);
+                        $auto_packs[] = array('weight' => $pack_weight);
 
                         $description = $document->createElement('description', htmlspecialchars($product->get_title()));
                         $pack->appendChild($description);
 
                         $shipment->appendChild($pack);
                         $pack_numbers[] = $pack_nr;
-                        $total_weight += $this->get_product_weight($product);
+                        $total_weight += $pack_weight;
                     }
                 }
                 // Continue with existing logic for products without total_shipments
@@ -767,11 +1168,20 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
                     $pack_weight = max(wc_get_weight($pack_weight, 'kg'), 0.1);
                     $weight = $document->createElement('weight', $pack_weight);
                     $pack->appendChild($weight);
+                    $auto_packs[] = array('weight' => $pack_weight);
                     $description = $document->createElement('description', htmlspecialchars($pack_description));
                     $pack->appendChild($description);
                     $shipment->appendChild($pack);
                     $pack_numbers[] = $pack_nr;
                     $total_weight += $pack_weight;
+                }
+
+                // Built packs only know their weight here, after their numbers were reserved; the
+                // unused numbers are a harmless gap. Built packs carry no dimensions.
+                $pack_error = $is_international ? $this->international_packs_error($auto_packs) : null;
+                if ($pack_error) {
+                    $this->record_dispatch_refusal($order, $pack_error);
+                    return new WP_Error('venipak_packs_refused', $pack_error);
                 }
             }
 
@@ -802,7 +1212,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch {
         return 0;
     }
 
-    private function get_order_address($order) {
+    public static function get_order_address($order) {
         $ship_to_billing = get_option('woocommerce_ship_to_destination');
         $is_shipping_address = $order->get_shipping_address_1() && $ship_to_billing !== 'billing_only';
 

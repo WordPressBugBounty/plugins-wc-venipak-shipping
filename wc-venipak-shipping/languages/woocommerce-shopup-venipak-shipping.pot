@@ -209,9 +209,6 @@ msgstr ""
 msgid "Remove package"
 msgstr ""
 
-#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:151
-msgid "Global shipment"
-msgstr ""
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:154
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-orders-list.php:146
@@ -509,4 +506,126 @@ msgstr ""
 
 #: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:387
 msgid "Venipak returned an empty response — the shipment was NOT registered."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-settings.php:496
+msgid "EORI number"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:199
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:208
+msgid "Customs document"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:201
+msgid "Commercial invoice"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:202
+msgid "Pro forma invoice"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:203
+msgid "Certificate of origin"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:207
+msgid "Upload file"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:208
+msgid "Choose from library"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:212
+msgid "PDF. Needed for destinations outside the EU. For invoices prefer \"Upload file\": files in the media library are publicly reachable."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:214
+msgid "Shipment value, EUR"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:399
+msgid "Unknown customs document type."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:407
+msgid "The customs document could not be uploaded."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:414
+msgid "The selected customs document was not found in the media library."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:431
+msgid "The customs document must be a PDF file."
+msgstr ""
+
+#. translators: %s: maximum file size, e.g. "5 MB"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:453
+#, php-format
+msgid "The customs document is too large. The limit is %s."
+msgstr ""
+
+#. translators: %s: order currency code, e.g. "USD"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:365
+#, php-format
+msgid "Enter the shipment value in EUR: this order is in %s."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:376
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:126
+msgid "The shipment value must be a positive number."
+msgstr ""
+
+#. translators: %s: order total with its currency, e.g. "120.00 USD"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:220
+#, php-format
+msgid "Order total: %s — enter the value in EUR."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:127
+msgid "The dispatch may still be running. Reload the order before dispatching again."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:642
+msgid "Shipments to Poland and Finland cannot mix packages up to 30 kg with heavier ones. Dispatch the heavier packages separately."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:646
+msgid "Packages over 30 kg to Poland or Finland need width, height and length."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:1011
+msgid "Shipments to countries outside LT, LV, EE, PL and FI need each package's dimensions and description. Enter them in the packages table on the order page and dispatch from there."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:621
+msgid "Fill in width, height, length and description for every package going outside LT, LV, EE, PL and FI."
+msgstr ""
+
+#. translators: 1: column name, e.g. "Width"; 2: the store's dimension unit, e.g. "cm"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:321
+#, php-format
+msgid "%1$s, %2$s"
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:266
+msgid "Courier orders are delivered to the address. To send this order to a pickup point, change its shipping method to Venipak pickup point."
+msgstr ""
+
+#. translators: 1: the store's dimension unit, e.g. "cm"; 2: a 30 x 20 x 10 cm box in that unit, e.g. "30 × 20 × 10"
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-dispatch.php:660
+#, php-format
+msgid "Package sizes are entered in %1$s, but one package comes out under 1 cm on every side. Check the sizes: a box of 30 × 20 × 10 cm is entered as %2$s."
+msgstr ""
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:128
+msgid "Request failed. Please try again."
+msgstr ""
+
+#: public/woocommerce/checkout/venipak-shipping-terminals.php:11
+#: public/woocommerce/checkout/venipak-shipping-terminals-inline.php:9
+#: public/js/pickups-block/pickups-block.js:25
+msgid "Select Venipak pickup point:"
 msgstr ""

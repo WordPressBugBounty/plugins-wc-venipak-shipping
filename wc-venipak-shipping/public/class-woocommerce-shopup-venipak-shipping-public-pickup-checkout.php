@@ -145,7 +145,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_pickup_checkout_process() {
-		if ( isset( $_POST['venipak_pickup_point'] ) && empty( $_POST['venipak_pickup_point'] ) )
+		if ( isset( $_POST['venipak_pickup_point'] ) && self::submitted_pickup_point_id( $_POST['venipak_pickup_point'] ) === '' )
 			wc_add_notice( ( __( 'Select pickup point', 'woocommerce-shopup-venipak-shipping' ) ), "error" );
 	}
 	 
@@ -156,22 +156,57 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_pickup_update_order_meta($order_id, $data) { 
-		if (isset($_POST['venipak_pickup_point'])) {
-			$order = wc_get_order($order_id);
-			venipak_store_order_pickup($order, sanitize_text_field($_POST['venipak_pickup_point']));
-			$order->save();
-		}
+		$submitted = isset($_POST['venipak_pickup_point']) ? $_POST['venipak_pickup_point'] : null;
+		self::save_checkout_pickup(wc_get_order($order_id), $submitted);
 	}
 	
 
  
 	public function add_venipak_shipping_pickup_update_order_meta_block_checkout($order, $request) { 
+		// Paying for an existing order (/wc/store/v1/checkout/<id>, also /wc/store/checkout/<id>) is
+		// not a delivery choice: the order already has its point, possibly one an admin set.
+		if (preg_match('#/checkout/\d+$#', $request->get_route())) return;
 		$body = $request->get_body();
 		$fields = json_decode($body, true);  
-		if (isset($fields['shipping_address']['venipak_pickup_point'])) {
-			venipak_store_order_pickup($order, sanitize_text_field($fields['shipping_address']['venipak_pickup_point']));
-			$order->save();
+		$submitted = isset($fields['shipping_address']['venipak_pickup_point']) ? $fields['shipping_address']['venipak_pickup_point'] : null;
+		self::save_checkout_pickup($order, $submitted);
+	}
+
+	/**
+	 * Keep the submitted point only on an order that ships with the pickup method; any other
+	 * method clears the point. The block checkout still sends a point picked before the buyer
+	 * switched to courier, and an order reused after a failed payment still has the earlier one.
+	 * Both checkouts have created the order's shipping line by the time these hooks run.
+	 * $submitted is null when the checkout sent no point; an earlier point then stays.
+	 *
+	 * @since    1.27.0
+	 */
+	private static function save_checkout_pickup($order, $submitted) {
+		$is_pickup_order = venipak_order_shipping_method_id($order) === 'shopup_venipak_shipping_pickup_method';
+		$nothing_to_do = $is_pickup_order ? $submitted === null : $order->get_meta('venipak_pickup_point') === '';
+		if ($nothing_to_do) return;
+
+		if ($is_pickup_order) {
+			venipak_store_order_pickup($order, self::submitted_pickup_point_id($submitted));
+		} else {
+			venipak_clear_order_pickup($order);
 		}
+		$order->save();
+	}
+
+	/**
+	 * The pickup point id a checkout submitted, or '' when the value is not an id — which
+	 * venipak_store_order_pickup() takes as "no point" and clears. Venipak's ids are integers;
+	 * anything else (a whole point as JSON, say) would be shown on the order screen and in
+	 * emails as if it came from Venipak, so it never reaches the order.
+	 * The block checkout sends the id as a JSON number, the classic checkout as a string.
+	 *
+	 * @since    1.27.0
+	 */
+	private static function submitted_pickup_point_id( $value ) {
+		if ( ! is_string( $value ) && ! is_int( $value ) ) return '';
+		$value = trim( (string) $value );
+		return ctype_digit( $value ) ? $value : '';
 	}
 
 	/**
@@ -198,6 +233,14 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_pickup_points() {
+		// Only the order edit screen sends order_id. The checkout path below reads the
+		// session country and cart, which there belong to the logged-in manager, not to
+		// the order — so that screen gets its own answer and never falls through.
+		if ( isset( $_GET['order_id'] ) ) {
+			echo json_encode( $this->get_pickup_points_for_order( absint( $_GET['order_id'] ) ) );
+			wp_die();
+		}
+
 		$cart_total_weight = WC()->cart->cart_contents_weight;
 		if (get_option('woocommerce_weight_unit') == 'g') {
 			$cart_total_weight /= 1000;
@@ -295,17 +338,44 @@ class Woocommerce_Shopup_Venipak_Shipping_Public_Pickup_Checkout {
 			wp_die();
 		}
 		
-		$collection = venipak_fetch_pickups();
-		$result = [];
-		$country = WC()->customer->get_shipping_country();
-		foreach ($collection as $item) {
-			if ($country !== $item['country']) continue;
-			if ($pickup_type !== 'all' && $pickup_type != $item['type']) continue;
-
-			$result[] = $item;
-		}
+		// Cast: venipak_fetch_pickups(null) would return every country instead of none.
+		$country = (string) WC()->customer->get_shipping_country();
+		$result = $this->filter_pickup_points_by_type( venipak_fetch_pickups( $country ), $pickup_type );
 		echo json_encode($result);
 		wp_die();
+	}
+
+	/**
+	 * Points for the order edit screen: the order's shipping country, else its billing
+	 * country, else every country. No cart checks — the manager picks for the order.
+	 *
+	 * @since    1.27.0
+	 */
+	private function get_pickup_points_for_order( $order_id ) {
+		if ( ! current_user_can( 'edit_shop_orders' ) ) return [];
+
+		$order = wc_get_order( $order_id );
+		// A refund is also returned by wc_get_order but has no address.
+		if ( ! ( $order instanceof WC_Order ) ) return [];
+
+		$country = $order->get_shipping_country() ?: $order->get_billing_country();
+		$points = $country ? venipak_fetch_pickups( $country ) : venipak_fetch_pickups();
+		return $this->filter_pickup_points_by_type( $points, $this->pickup_type );
+	}
+
+	/**
+	 * Keep only points of the given pickup type; 'all' keeps every point.
+	 * The loose != is deliberate: the setting holds '1' / '3', the feed int 1 / 3.
+	 *
+	 * @since    1.27.0
+	 */
+	private function filter_pickup_points_by_type( $points, $pickup_type ) {
+		$result = [];
+		foreach ( $points as $item ) {
+			if ( $pickup_type !== 'all' && $pickup_type != $item['type'] ) continue;
+			$result[] = $item;
+		}
+		return $result;
 	}
 
 	/**

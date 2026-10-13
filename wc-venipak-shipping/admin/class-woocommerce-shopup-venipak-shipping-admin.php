@@ -120,6 +120,12 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woocommerce-shopup-venipak-shipping-admin.js', array( 'jquery' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'venipakAdmin', array(
 			'nonce' => wp_create_nonce( 'venipak_shipping_admin' ),
+			// The order page checks these before sending, so the merchant is not left waiting on an upload the server refuses.
+			'maxDocumentBytes' => Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::customs_document_max_bytes(),
+			'documentTooLarge' => Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::customs_document_too_large_message(),
+			'invalidValue' => __( 'The shipment value must be a positive number.', 'woocommerce-shopup-venipak-shipping' ),
+			'dispatchMayBeRunning' => __( 'The dispatch may still be running. Reload the order before dispatching again.', 'woocommerce-shopup-venipak-shipping' ),
+			'requestFailed' => __( 'Request failed. Please try again.', 'woocommerce-shopup-venipak-shipping' ),
 		));
 	}
 

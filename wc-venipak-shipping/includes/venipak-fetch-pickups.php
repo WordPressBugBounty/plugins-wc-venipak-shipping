@@ -166,3 +166,30 @@ function venipak_resolve_order_pickup($order, &$source = null) {
 
   return false;
 }
+
+/**
+ * The method id of the order's shipping line ('' when it has none), e.g.
+ * 'shopup_venipak_shipping_pickup_method'. The plugin ships one package per order.
+ */
+function venipak_order_shipping_method_id($order) {
+  $shipping_methods = $order->get_shipping_methods();
+  $first = reset($shipping_methods);
+  return $first ? $first['method_id'] : '';
+}
+
+/**
+ * The pickup point the parcel goes to, or false when it goes to the order's address. Everything
+ * that builds, checks or shows the delivery asks this, not venipak_resolve_order_pickup().
+ *
+ * A Venipak courier order never goes to a point, whatever is stored: the block checkout keeps a
+ * point picked before the buyer switched to courier. Any other method takes the stored point:
+ * the pickup method, and also a non-Venipak method under "force dispatch", where an admin can
+ * give the order a point on purpose. $source as in venipak_resolve_order_pickup().
+ */
+function venipak_delivery_pickup_point($order, &$source = null) {
+  if (venipak_order_shipping_method_id($order) === 'shopup_venipak_shipping_courier_method') {
+    $source = null;
+    return false;
+  }
+  return venipak_resolve_order_pickup($order, $source);
+}

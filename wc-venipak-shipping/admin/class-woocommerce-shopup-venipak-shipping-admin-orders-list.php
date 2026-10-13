@@ -135,19 +135,19 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Orders_List {
         $tracking_data =  isset($pack_numbers) ? $this->get_order_tracking_data($pack_numbers, $order) : '';
 		$content = '<div id="shopup_venipak_shipping_wrapper_order_' . $post_id . '">';
 		$pack_numbers_string = isset($pack_numbers) ? implode(', ', $pack_numbers) : '';
-		$content .= isset($tracking_data) ? '<span><strong>'.$tracking_data.'</strong></span>' : "";
+		$content .= isset($tracking_data) ? '<span><strong>'.esc_html($tracking_data).'</strong></span>' : "";
 		$is_unconfirmed = Woocommerce_Shopup_Venipak_Shipping_Admin_Dispatch::is_unconfirmed($venipak_shipping_order_data);
 		if (($status === 'sent' && isset($pack_numbers)) || $is_unconfirmed) {
-			$content .= '<div>' . $pack_numbers_string . '</div>';
+			$content .= '<div>' . esc_html($pack_numbers_string) . '</div>';
 			$content .= $this->get_print_buttons_html($post_id, $pack_numbers_string, $manifest);
 			if ($is_unconfirmed && $order->get_status() === 'processing') {
 				$content .= $this->get_dispatch_button_html($post_id);
 			}
 		} elseif ($status === 'error') {
-			$content .= '<div class="venipak-shipping-error">' . $error_message . '</div>';
+			$content .= '<div class="venipak-shipping-error">' . esc_html($error_message) . '</div>';
 			$content .= $this->get_dispatch_button_html($post_id);
 		} elseif ($order->get_status() === 'processing') {
-			$content .= '<div>' . $pack_numbers_string . '</div>';
+			$content .= '<div>' . esc_html($pack_numbers_string) . '</div>';
 			$content .= $this->get_dispatch_button_html($post_id);
 		}
 

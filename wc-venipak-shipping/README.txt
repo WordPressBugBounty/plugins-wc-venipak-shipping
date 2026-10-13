@@ -3,8 +3,8 @@ Contributors: shopup
 Tags: Venipak
 Requires at least: 6.5
 Requires PHP: 7.4
-Tested up to: 7.0.3
-Stable tag: 1.26.6
+Tested up to: 7.1
+Stable tag: 1.27.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,18 @@ Support: https://www.venipak.com/
 == Screenshots ==
 
 == Changelog ==
+
+= 1.27.0 =
+* New: Shipments to countries outside LT, LV, EE, PL and FI can carry a customs document (commercial invoice, pro forma invoice or certificate of origin, PDF). Attach it on the order page by uploading a file or choosing one from the media library; it is sent to Venipak with the dispatch and not stored on the site
+* New: For those shipments the order page also takes the shipment value in EUR. Left empty, the order total is used; an order in another currency needs the value entered
+* New: EORI number in the sender settings, sent with global shipments
+* New: Shipments from Lithuania, Latvia or Estonia to Poland or Finland are sent as Venipak international shipments, as Venipak requires. A dispatch that mixes packages up to 30 kg with heavier ones, or has a package over 30 kg without width, height and length, is refused with an explanation instead of being sent
+* New: The "Global shipment" checkbox on the order page is gone. The shipment type (domestic, international or global) is chosen from the sender and recipient countries; for pickup orders the pickup point's country counts. Shipments to countries outside LT, LV, EE, PL and FI need every package's width, height, length and description: bulk dispatch and the Dispatch button in the orders list refuse them with an explanation (dispatch them from the order page), and the order page refuses packages with any of these missing
+* Fix: Package width, height and length on the order page are now entered in the store's dimension unit, shown in the table header, and sent to Venipak in metres as it requires. Before, the value was sent as typed, so 30 meant as centimetres went as 30 metres
+* Fix: An order placed with Venipak courier after a pickup point had been picked at checkout was shipped to that pickup point. A courier order now always goes to its address, and checkout keeps a pickup point only for the pickup method
+* Fix: Products split into several packages ("Total shipments") now declare each package's share of the product weight, in kg, whatever the store's weight unit. Before, every package carried the full product weight, unconverted
+* Fix: The pickup point selector on the order screen listed points for the logged-in manager's own country and cart instead of the order's: points of the wrong country, or none when the manager had no country set or their own cart held a heavy, oversized or age-restricted product. It now lists the points of the order's shipping country (billing country if there is no shipping address; all countries if the order has neither)
+* Security: A pickup point name submitted through the block checkout could carry HTML that ran on the order screen and in emails. Pickup point details are now escaped wherever they are shown, checkout accepts only a pickup point id, and tracking details from Venipak are escaped too
 
 = 1.26.6 =
 * Fix: An order whose dispatch was cut off before Venipak's answer was recorded (a PHP time limit, an error in another plugin) showed "Undefined array key" warnings in the orders list and had no label button. Such orders now show their pack numbers and the label button. Printing the label marks the dispatch as sent once Venipak returns it, so a later Dispatch does not register the parcel twice; if Venipak has no such parcel, the label window says so
