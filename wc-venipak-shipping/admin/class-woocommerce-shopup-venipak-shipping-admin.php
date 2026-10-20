@@ -126,6 +126,9 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin {
 			'invalidValue' => __( 'The shipment value must be a positive number.', 'woocommerce-shopup-venipak-shipping' ),
 			'dispatchMayBeRunning' => __( 'The dispatch may still be running. Reload the order before dispatching again.', 'woocommerce-shopup-venipak-shipping' ),
 			'requestFailed' => __( 'Request failed. Please try again.', 'woocommerce-shopup-venipak-shipping' ),
+			'pointSaved' => __( 'Saved.', 'woocommerce-shopup-venipak-shipping' ),
+			'notSelected' => __( 'Not selected', 'woocommerce-shopup-venipak-shipping' ),
+			'savePointFirst' => __( 'Save or cancel the pickup point change first.', 'woocommerce-shopup-venipak-shipping' ),
 		));
 	}
 

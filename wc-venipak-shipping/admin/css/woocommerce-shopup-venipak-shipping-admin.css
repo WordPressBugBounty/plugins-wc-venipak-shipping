@@ -2,3 +2,8 @@
  * All of the CSS for your admin-specific functionality should be
  * included in this file.
  */
+
+/* The Venipak block of the order page looks like WooCommerce's own address blocks. */
+#order_data .order_data_column .venipak-shipping-box { margin-top: 8px; }
+#order_data .order_data_column .venipak-shipping-box p { margin: 0 0 8px; line-height: 1.6; overflow-wrap: anywhere; }
+#order_data .order_data_column .venipak-shipping-box strong { display: block; margin-bottom: 4px; font-weight: 600; color: #1e1e1e; }

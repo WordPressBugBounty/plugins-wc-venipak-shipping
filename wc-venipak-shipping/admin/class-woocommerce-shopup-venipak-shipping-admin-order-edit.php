@@ -106,6 +106,8 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
     	
 		if (!$this->shopup_venipak_shipping_field_forcedispatch && $shipping_method_id !== 'shopup_venipak_shipping_courier_method' && $shipping_method_id !== 'shopup_venipak_shipping_pickup_method') return;
 
+		// A courier order is delivered to the address, so a stored point is never used and cannot be changed here.
+		$is_courier_order = $shipping_method_id === 'shopup_venipak_shipping_courier_method';
 		$venipak_pickup_point_id = $order->get_meta('venipak_pickup_point', true );
 		$venipak_pickup_point_title = $this->get_venipak_point_title($order);
 		$status = $this->get_venipak_status($order);
@@ -139,13 +141,45 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 
 		?>
 		<br class="clear" />
-		<h4><?php echo __( 'Venipak shipping', 'woocommerce-shopup-venipak-shipping' ); ?> <a href="#" class="edit_address"></a></h4>
-		<div class="address">
+		<h4><?php echo __( 'Venipak shipping', 'woocommerce-shopup-venipak-shipping' ); ?></h4>
+		<div class="venipak-shipping-box">
 			<p><strong><?php echo __( 'Total weight', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $weight . ' ' . __( 'kg.', 'woocommerce-shopup-venipak-shipping' ) ?></p>
 			<p><strong><?php echo __( 'Products count', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $product_count . ' ' . __( 'vnt.', 'woocommerce-shopup-venipak-shipping' ) ?></p>
 			<p><strong><?php echo __( 'Packages count', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $pack_count . ' ' . __( 'vnt.', 'woocommerce-shopup-venipak-shipping' )?></p>
-		<?php if ($venipak_pickup_point_title) { ?>
-			<p><strong><?php echo __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo esc_html( $venipak_pickup_point_title ); ?></p>
+		<?php if ( $is_courier_order ) { ?>
+			<p class="description"><?php echo esc_html( $this->courier_order_hint() ); ?></p>
+		<?php } else { ?>
+			<p>
+				<strong><?php echo __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ); ?></strong>
+				<span id="venipak-pickup-point-title"><?php echo esc_html( $venipak_pickup_point_title ?: __( 'Not selected', 'woocommerce-shopup-venipak-shipping' ) ); ?></span>
+				<button type="button" class="button button-small" id="venipak-pickup-point-change"><?php esc_html_e( 'Change', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+			</p>
+			<?php // The editor's script is in the admin js and reads the order and the stored point from here. The select stays inside the order form, so Update still posts the chosen point. ?>
+			<div id="venipak-pickup-point-editor" data-order-id="<?php echo (int) $order->get_id(); ?>" data-stored-id="<?php echo esc_attr( (string) $venipak_pickup_point_id ); ?>" style="display: none;">
+				<?php if ( $status === 'sent' || $is_unconfirmed ) { ?>
+				<div class="notice notice-warning inline"><p><?php esc_html_e( 'This order is already sent to Venipak. A new point applies only after "Dispatch one more time".', 'woocommerce-shopup-venipak-shipping' ); ?></p></div>
+				<?php } ?>
+				<?php
+				// The select holds the stored point so that Update keeps it, also one Venipak no longer lists.
+				$default_options = array();
+				if ( $venipak_pickup_point_id !== '' ) {
+					$default_options[ $venipak_pickup_point_id ] = $venipak_pickup_point_title ?: $venipak_pickup_point_id . ' (' . __( 'no longer available', 'woocommerce-shopup-venipak-shipping' ) . ')';
+				}
+				woocommerce_wp_select( array(
+					'id' => 'venipak_pickup_point',
+					'label' => __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ),
+					'class' => 'venipak_pickup_point',
+					'wrapper_class' => 'form-field-wide',
+					'options' => $default_options
+				) );
+				?>
+				<?php // What this page was loaded with: Update applies the select only if it differs, so a page that went stale in another tab does not undo a newer point. ?>
+				<input type="hidden" name="venipak_pickup_point_loaded" value="<?php echo esc_attr( (string) $venipak_pickup_point_id ); ?>" />
+				<button type="button" class="button button-primary" id="venipak-pickup-point-save"><?php esc_html_e( 'Save', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+				<button type="button" class="button" id="venipak-pickup-point-cancel"><?php esc_html_e( 'Cancel', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+				<button type="button" class="button" id="venipak-pickup-point-remove"><?php esc_html_e( 'Remove point', 'woocommerce-shopup-venipak-shipping' ); ?></button>
+			</div>
+			<p id="venipak-pickup-point-status" role="status"></p>
 		<?php } ?>
 		<?php if ($tracking_code) { ?>
 			<p><strong><?php echo __( 'Tracking number', 'woocommerce-shopup-venipak-shipping' ); ?></strong><?php echo $tracking_code ?></p>
@@ -243,43 +277,7 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 			<?php } ?>
 			</div>
 		</div>
-		<div class="edit_address">
-		<?php
-		// The select holds the stored point so that Update keeps it, also one Venipak no longer lists.
-		// A courier order gets none: it is delivered to the address, so a stored point is never used.
-		$is_courier_order = $shipping_method_id === 'shopup_venipak_shipping_courier_method';
-		$selected_point_id = ! $is_courier_order && $venipak_pickup_point_id !== '' ? $venipak_pickup_point_id : null;
-		$default_options = array();
-		if ( $selected_point_id !== null ) {
-			$default_options[ $selected_point_id ] = $venipak_pickup_point_title ?: $selected_point_id . ' (' . __( 'no longer available', 'woocommerce-shopup-venipak-shipping' ) . ')';
-		}
-		woocommerce_wp_select( array(
-			'id' => 'venipak_pickup_point',
-			'label' => __( 'Pickup point', 'woocommerce-shopup-venipak-shipping' ),
-			'class' => 'venipak_pickup_point',
-			'wrapper_class' => 'form-field-wide',
-			'options' => $default_options
-		) );
-		?>
-			<button type="button" onclick="jQuery('.venipak_pickup_point').val(null).trigger('change');"><?php echo __( 'Remove', 'woocommerce-shopup-venipak-shipping' ); ?></button>
-		<?php if ( $is_courier_order ) { ?>
-			<p class="description"><?php esc_html_e( 'Courier orders are delivered to the address. To send this order to a pickup point, change its shipping method to Venipak pickup point.', 'woocommerce-shopup-venipak-shipping' ); ?></p>
-		<?php } ?>
-		</div>
 		<script>
-		jQuery(document).ready(function($) {
-			$.get('admin-ajax.php', { 'action': 'woocommerce_venipak_shipping_pickup_points', 'order_id': <?php echo (int) $order->get_id(); ?> }, function(data) {
-			$('.venipak_pickup_point').select2({
-				data: data.map(value => ({
-					id: value.id,
-					text: `${value.name}, ${value.address}, ${value.city}, ${value.zip}`,
-				})),
-		    });
-	      	<?php // JSON_HEX_TAG: an old order's meta can be a whole point as JSON, and its "<" must not reach the HTML parser inside this script. ?>
-	      	$('.venipak_pickup_point').val(<?php echo wp_json_encode( $selected_point_id, JSON_HEX_TAG ); ?>).trigger('change');
-      }, 'json');
-  	});
-
 		function addPackage() {
 			jQuery('#packages-table tr:last').after('<tr class="venipak-pack"><td><input class="venipak-pack-width" style="width: 70px;" type="text" name="width[]" /></td><td><input class="venipak-pack-height" style="width: 70px;" type="text" name="height[]" /></td><td><input class="venipak-pack-length" style="width: 70px;" type="text" name="length[]" /></td><td><input class="venipak-pack-weight" style="width: 70px;" type="text" name="weight[]" /></td><td><textarea class="venipak-pack-description" name="description[]"></textarea></td><td><button onclick="removePackage(this)" type="button"><?php echo __( "Remove package", "woocommerce-shopup-venipak-shipping" ); ?></button></td></tr>');
 		}
@@ -292,23 +290,89 @@ class Woocommerce_Shopup_Venipak_Shipping_Admin_Order_Edit {
 	}
 
 	/**
+	 * Saves the pickup point chosen in the order page's editor without the order's Update button.
+	 * An empty point_id removes the point.
+	 */
+	public function save_pickup_point() {
+		check_ajax_referer( 'venipak_shipping_admin', 'nonce' );
+		// The same gate as the point list: whoever may edit the order may change its point.
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to change this order.', 'woocommerce-shopup-venipak-shipping' ) ), 403 );
+		}
+
+		// A refund is also returned by wc_get_order but is no order to deliver.
+		$order = wc_get_order( isset( $_POST['order_id'] ) ? absint( $_POST['order_id'] ) : 0 );
+		if ( ! ( $order instanceof WC_Order ) ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'woocommerce-shopup-venipak-shipping' ) ), 404 );
+		}
+		if ( venipak_order_shipping_method_id( $order ) === 'shopup_venipak_shipping_courier_method' ) {
+			wp_send_json_error( array( 'message' => $this->courier_order_hint() ), 400 );
+		}
+
+		// Only an explicit empty string removes the point; no value at all is a bad request.
+		if ( ! isset( $_POST['point_id'] ) || ! is_string( $_POST['point_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown pickup point.', 'woocommerce-shopup-venipak-shipping' ) ), 400 );
+		}
+		$point_id = trim( wp_unslash( $_POST['point_id'] ) );
+		if ( $point_id !== '' && ( ! ctype_digit( $point_id ) || ! venipak_find_pickup_by_id( $point_id ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown pickup point.', 'woocommerce-shopup-venipak-shipping' ) ), 400 );
+		}
+
+		if ( $point_id !== trim( (string) $order->get_meta( 'venipak_pickup_point', true ) ) ) {
+			venipak_store_order_pickup( $order, $point_id );
+			$order->save();
+			$order->add_order_note( $this->pickup_point_note( $this->get_venipak_point_title( $order ) ), 0, true );
+		}
+
+		wp_send_json_success( array(
+			'point_id' => $point_id,
+			'title' => (string) $this->get_venipak_point_title( $order ),
+		) );
+	}
+
+	/**
+	 * Hides the plugin's own order meta from WooCommerce's Custom Fields box: with high-performance order
+	 * storage the box writes its page-load copy back after our hooks, undoing a newer point or dispatch.
+	 */
+	public function is_protected_meta( $protected, $meta_key ) {
+		return $protected || in_array( $meta_key, array( 'venipak_pickup_point', 'venipak_pickup_point_data', 'venipak_shipping_order_data' ), true );
+	}
+
+	private function pickup_point_note( $title ) {
+		if ( $title === null ) {
+			return __( 'Venipak pickup point removed.', 'woocommerce-shopup-venipak-shipping' );
+		}
+		/* translators: %s: the pickup point's name and address */
+		return sprintf( __( 'Venipak pickup point changed to %s.', 'woocommerce-shopup-venipak-shipping' ), esc_html( $title ) );
+	}
+
+	private function courier_order_hint() {
+		return __( 'Courier orders are delivered to the address. To send this order to a pickup point, change its shipping method to Venipak pickup point.', 'woocommerce-shopup-venipak-shipping' );
+	}
+
+	/**
 	 *
 	 *
 	 * @since    1.0.0
 	 */
 	public function add_venipak_shipping_order_save( $order_id ) {
 		$order = wc_get_order($order_id);
-		if ( isset( $_POST['venipak_pickup_point'] )) {
-			// WooCommerce hands this hook $_POST still slashed.
-			$posted = is_string( $_POST['venipak_pickup_point'] ) ? trim( wp_unslash( $_POST['venipak_pickup_point'] ) ) : '';
+		if ( ! isset( $_POST['venipak_pickup_point'] ) && ! isset( $_POST['venipak_pickup_point_loaded'] ) ) {
+			venipak_clear_order_pickup( $order );
+		} else {
+			// WooCommerce hands this hook $_POST still slashed. An empty select posts nothing.
+			$posted = isset( $_POST['venipak_pickup_point'] ) && is_string( $_POST['venipak_pickup_point'] ) ? trim( wp_unslash( $_POST['venipak_pickup_point'] ) ) : '';
+			// The order page says which point it was loaded with: only a different choice counts, so a page
+			// gone stale in another tab cannot undo a newer point. An older page is compared with the stored point.
+			$before = isset( $_POST['venipak_pickup_point_loaded'] ) && is_string( $_POST['venipak_pickup_point_loaded'] )
+				? trim( wp_unslash( $_POST['venipak_pickup_point_loaded'] ) )
+				: trim( (string) $order->get_meta( 'venipak_pickup_point', true ) );
 			// An order from before the id-only meta posts its whole stored point back as JSON;
 			// an unchanged value is left alone so such an order keeps its point. A new choice
 			// must be an id, as at checkout: anything else clears, as an empty value does.
-			if ( $posted !== trim( (string) $order->get_meta( 'venipak_pickup_point', true ) ) ) {
+			if ( $posted !== $before ) {
 				venipak_store_order_pickup( $order, ctype_digit( $posted ) ? $posted : '' );
 			}
-		} else {
-			venipak_clear_order_pickup( $order );
 		}
 		$order->save();
 	}

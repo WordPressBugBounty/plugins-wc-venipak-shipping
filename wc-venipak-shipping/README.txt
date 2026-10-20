@@ -4,7 +4,7 @@ Tags: Venipak
 Requires at least: 6.5
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.27.0
+Stable tag: 1.27.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,14 @@ Support: https://www.venipak.com/
 == Screenshots ==
 
 == Changelog ==
+
+= 1.27.1 =
+* New: The pickup point on the order page has its own editor with Change, Save, Cancel and Remove point. The point is saved at once, without updating the whole order, and an order note records the change
+* New: While a pickup point change is not saved, Dispatch on the order page refuses with a reminder, so the parcel no longer goes to the previous point
+* New: For an order already sent to Venipak, or with an unconfirmed dispatch, the editor warns that a new point applies only after "Dispatch one more time"
+* Fix: On stores using High-Performance Order Storage, pressing Update after Dispatch on the same page without reloading put the order's earlier Venipak data back, so the order looked undispatched. The plugin's own order data no longer appears in the order's Custom Fields box
+* Fix: An order page left open in another tab no longer undoes a newer pickup point when it is updated
+* Tweak: Courier orders say why they have no pickup point. Lithuanian translations for the new texts
 
 = 1.27.0 =
 * New: Shipments to countries outside LT, LV, EE, PL and FI can carry a customs document (commercial invoice, pro forma invoice or certificate of origin, PDF). Attach it on the order page by uploading a file or choosing one from the media library; it is sent to Venipak with the dispatch and not stored on the site

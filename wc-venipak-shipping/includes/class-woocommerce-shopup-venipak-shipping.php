@@ -212,6 +212,8 @@ class Woocommerce_Shopup_Venipak_Shipping {
 		$this->loader->add_action( 'manage_woocommerce_page_wc-orders_custom_column', $plugin_admin_orders_list, 'add_venipak_shipping_orders_list_columns_content', 20, 2 ); 
 		$this->loader->add_action( 'wp_ajax_woocommerce_shopup_venipak_shipping_dispatch', $plugin_admin_dispatch, 'add_venipak_shipping_dispatch' );
 		$this->loader->add_action( 'wp_ajax_woocommerce_shopup_venipak_shipping_dispatch_force', $plugin_admin_dispatch, 'add_venipak_shipping_dispatch_force' );
+		$this->loader->add_action( 'wp_ajax_woocommerce_shopup_venipak_shipping_save_pickup_point', $plugin_admin_order_edit, 'save_pickup_point' );
+		$this->loader->add_filter( 'is_protected_meta', $plugin_admin_order_edit, 'is_protected_meta', 10, 2 );
 		$this->loader->add_action( 'handle_bulk_actions-edit-shop_order', $plugin_admin_dispatch, 'add_venipak_shipping_bulk_action_process', 10, 3  );
 		$this->loader->add_action( 'handle_bulk_actions-woocommerce_page_wc-orders', $plugin_admin_dispatch, 'add_venipak_shipping_bulk_action_process', 10, 3  );
 

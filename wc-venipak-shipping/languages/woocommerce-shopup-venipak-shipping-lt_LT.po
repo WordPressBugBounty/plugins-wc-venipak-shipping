@@ -633,6 +633,62 @@ msgstr "Užklausa nepavyko. Bandykite dar kartą."
 msgid "Select Venipak pickup point:"
 msgstr "Pasirinkite Venipak atsiėmimo tašką:"
 
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:154
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:130
+msgid "Not selected"
+msgstr "Nepasirinktas"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:155
+msgid "Change"
+msgstr "Keisti"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:160
+msgid "This order is already sent to Venipak. A new point applies only after \"Dispatch one more time\"."
+msgstr "Šis užsakymas jau išsiųstas į Venipak. Naujas taškas bus taikomas tik paspaudus „Siųsti dar kartą“."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:178
+msgid "Save"
+msgstr "Išsaugoti"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:179
+msgid "Cancel"
+msgstr "Atšaukti"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:180
+msgid "Remove point"
+msgstr "Pašalinti tašką"
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:300
+msgid "You are not allowed to change this order."
+msgstr "Neturite teisės keisti šio užsakymo."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:306
+msgid "Order not found."
+msgstr "Užsakymas nerastas."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:314
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:318
+msgid "Unknown pickup point."
+msgstr "Nežinomas atsiėmimo taškas."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:343
+msgid "Venipak pickup point removed."
+msgstr "Venipak atsiėmimo taškas pašalintas."
+
+#. translators: %s: the pickup point's name and address
+#: admin/class-woocommerce-shopup-venipak-shipping-admin-order-edit.php:346
+#, php-format
+msgid "Venipak pickup point changed to %s."
+msgstr "Venipak atsiėmimo taškas pakeistas į %s."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:129
+msgid "Saved."
+msgstr "Išsaugota."
+
+#: admin/class-woocommerce-shopup-venipak-shipping-admin.php:131
+msgid "Save or cancel the pickup point change first."
+msgstr "Pirmiausia išsaugokite arba atšaukite atsiėmimo taško pakeitimą."
+
 #~ msgid "Global shipment"
 #~ msgstr "Tarptautinė siunta"
 
